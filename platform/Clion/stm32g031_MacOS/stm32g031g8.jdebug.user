@@ -1,0 +1,34 @@
+
+
+Breakpoint=/Users/donn1e/Desktop/KS_LCD_2.0_3E/application/project/home_station_stm32g031/application/User/source/Show_Ctrl.c:671, State=BP_STATE_DISABLED
+Breakpoint=/Users/donn1e/Desktop/KS_LCD_2.0_3E/application/project/home_station_stm32g031/application/User/source/Show_Ctrl.c:680:5, State=BP_STATE_DISABLED
+Breakpoint=/Users/donn1e/Desktop/KS_LCD_2.0_3E/application/project/home_station_stm32g031/application/User/source/Show_Ctrl.c:685:5, State=BP_STATE_DISABLED
+Breakpoint=/Users/donn1e/Desktop/KS_LCD_2.0_3E/application/project/home_station_stm32g031/application/User/source/Show_Ctrl.c:1625:13, State=BP_STATE_DISABLED
+Breakpoint=/Users/donn1e/Desktop/KS_LCD_2.0_3E/application/project/home_station_stm32g031/application/protocal_1363/source/protocal1363_app.c:1775, State=BP_STATE_DISABLED
+OpenDocument="protocol1363_handler.c", FilePath="/Users/donn1e/Desktop/KS_LCD_2.0_3E/application/project/home_station_stm32g031/application/protocal_1363/source/protocol1363_handler.c", Line=267
+OpenDocument="protocol_1363_get_para.c", FilePath="/Users/donn1e/Desktop/KS_LCD_2.0_3E/application/project/home_station_stm32g031/application/protocal_1363/source/protocol_1363_get_para.c", Line=1595
+OpenDocument="Show_Ctrl.c", FilePath="/Users/donn1e/Desktop/KS_LCD_2.0_3E/application/project/home_station_stm32g031/application/User/source/Show_Ctrl.c", Line=265
+OpenDocument="stm32g0xx_it.c", FilePath="/Users/donn1e/Desktop/KS_LCD_2.0_3E/application/project/home_station_stm32g031/application/User/source/stm32g0xx_it.c", Line=86
+OpenDocument="startup_stm32g031xx.s", FilePath="/Users/donn1e/Desktop/KS_LCD_2.0_3E/startup/startup_stm32g031xx.s", Line=50
+OpenDocument="main.c", FilePath="/Users/donn1e/Desktop/KS_LCD_2.0_3E/application/project/home_station_stm32g031/application/User/source/main.c", Line=31
+OpenDocument="stm32g0xx_hal_uart.c", FilePath="/Users/donn1e/Desktop/KS_LCD_2.0_3E/Drivers/STM32G0xx_HAL_Driver/Src/stm32g0xx_hal_uart.c", Line=2395
+OpenDocument="protocal1363_app.c", FilePath="/Users/donn1e/Desktop/KS_LCD_2.0_3E/application/project/home_station_stm32g031/application/protocal_1363/source/protocal1363_app.c", Line=1758
+OpenDocument="LCD_12864.c", FilePath="/Users/donn1e/Desktop/KS_LCD_2.0_3E/application/project/home_station_stm32g031/application/User/source/LCD_12864.c", Line=202
+OpenToolbar="View", Floating=0, x=1, y=0
+OpenToolbar="Debug", Floating=0, x=0, y=0
+OpenWindow="Call Stack", DockArea=RIGHT, x=0, y=1, w=612, h=863, TabPos=2, TopOfStack=0, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Disassembly", DockArea=RIGHT, x=0, y=0, w=612, h=224, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Memory 1", DockArea=BOTTOM, x=0, y=0, w=2560, h=238, TabPos=0, TopOfStack=0, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0, EditorAddress=0xC000
+OpenWindow="Local Data", DockArea=RIGHT, x=0, y=1, w=612, h=863, TabPos=3, TopOfStack=0, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Watched Data 1", DockArea=RIGHT, x=0, y=1, w=612, h=863, TabPos=1, TopOfStack=1, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Terminal", DockArea=RIGHT, x=0, y=1, w=612, h=863, TabPos=0, TopOfStack=0, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Find Results", DockArea=BOTTOM, x=0, y=0, w=2560, h=238, TabPos=1, TopOfStack=1, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+TableHeader="Local Data", SortCol="Name", SortOrder="ASCENDING", VisibleCols=["Name";"Value";"Location";"Size";"Type";"Scope"], ColWidths=[182;242;100;100;100;100]
+TableHeader="Call Stack", SortCol="Function", SortOrder="ASCENDING", VisibleCols=["Function";"Stack Frame";"Source";"PC";"Return Address";"Stack Used"], ColWidths=[227;150;140;100;126;100]
+TableHeader="Power Sampling", SortCol="None", SortOrder="ASCENDING", VisibleCols=["Index";"Time";"Ch 0"], ColWidths=[100;100;100]
+TableHeader="RegisterSelectionDialog", SortCol="None", SortOrder="ASCENDING", VisibleCols=[], ColWidths=[]
+TableHeader="Watched Data 1", SortCol="Expression", SortOrder="ASCENDING", VisibleCols=["Expression";"Value";"Refresh"], ColWidths=[238;308;100]
+WatchedExpression="protocol_com", RefreshRate=1, Window=Watched Data 1
+WatchedExpression="bms", Window=Watched Data 1
+WatchedExpression="g_sm_info", RefreshRate=1, Window=Watched Data 1
+WatchedExpression="fxxx", RefreshRate=1, Window=Watched Data 1
