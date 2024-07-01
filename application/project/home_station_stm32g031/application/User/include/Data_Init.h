@@ -21,7 +21,7 @@ typedef struct {
     int16_t Current; //电流
     uint16_t Vsum;   //总压
     uint16_t Rm;     //剩余容量
-    uint16_t Fcc;       //总容量
+    uint16_t Fcc;       //满充容量
     uint16_t Cycle;     //循环
     uint16_t DesignCap; //设置容量
 

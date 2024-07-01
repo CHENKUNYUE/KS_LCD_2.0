@@ -4,7 +4,7 @@
 *                         www.segger.com                             *
 **********************************************************************
 
-File          : D:/G031_template/platform/Clion/STM32g031/stm32g031.jdebug
+File          : /Users/KS_project/G031_LCD/KS_LCD_2.0_3E/platform/Clion/STM32g031/stm32g031.jdebug
 Created       : 1 Jun 2021 16:35
 Ozone Version : V3.22e
 */
@@ -22,8 +22,8 @@ void OnProjectLoad (void) {
   //
   // Dialog-generated settings
   //
-  Project.AddPathSubstitute ("D:/G031_template/platform/Clion/STM32g031", "$(ProjectDir)");
-  Project.AddPathSubstitute ("d:/g031_template/platform/clion/stm32g031", "$(ProjectDir)");
+  Project.AddPathSubstitute ("/Users/KS_project/G031_LCD/KS_LCD_2.0_3E/platform/Clion/STM32g031/stm32g031.jdebug", "$(ProjectDir)");
+  Project.AddPathSubstitute ("/Users/KS_project/G031_LCD/KS_LCD_2.0_3E/platform/Clion/STM32g031/stm32g031.jdebug", "$(ProjectDir)");
   Project.SetDevice ("STM32G031G8");
   Project.SetHostIF ("USB", "");
   Project.SetTargetIF ("SWD");
@@ -32,7 +32,7 @@ void OnProjectLoad (void) {
   //
   // User settings
   //
-  File.Open ("D:\G031_template\cmake-build-debug\G031_template.elf");
+  File.Open ("/Users/KS_project/G031_LCD/KS_LCD_2.0_3E/cmake-build-debug/stm32_g031g8.elf");
 }
 
 /*********************************************************************
