@@ -12,6 +12,7 @@
 #define __SHOW_CTRL_H
 #include "stm32g0xx_hal.h"
 
+//#define Rm
 
 #define  PAGE_WELCOME         0
 #define  PAGE_MENU            1
