@@ -13,13 +13,6 @@
 #include <stdint.h>
 #include "paras.h"
 
-#ifndef CELL_NUM
-#define  CELL_NUM  20
-#define  TEMP_NUM  6
-#define  PACK_NUM  1
-#define  BATT_TEMP_NUM  20
-#endif
-
 #define     VERSION_PROTOCOL                                0x22
 #define     VERSION_LD                                      0x25
 #define     COMM_BUFF_LEN                                   512
@@ -35,6 +28,8 @@
 #define     PROTOCOL_1363_ADD                               0x01
 #define     PROTOCOL_1363_CID1                              0x4A
 #define     SOL1363                                         0
+#define     P_1363_INFO_S                                   (13)
+
 
 typedef enum {
   /*0*/com_ok = 0,
@@ -48,8 +43,6 @@ typedef enum {
   /*8*/com_no_run,
 
 } COM_RTN_ENUM_TYPEDEF;
-
-
 
 typedef enum {
     get_obtain_quantized_analog_floating_data_id = 0,
@@ -66,8 +59,6 @@ typedef enum {
 typedef unsigned char uint8_t;
 typedef unsigned short uint16_t;
 //typedef unsigned int uint32_t;
-
-
 
 typedef enum {
     enum_data_var_end = 0,

@@ -8,36 +8,90 @@
 *******************************************************************************/
 #include "Show_Ctrl.h"
 
+#include <stdbool.h>
+
 #include "Data_Init.h"
 #include "Font_Library.h"
 #include "Key_Scan.h"
 #include "LCD_12864.h"
 #include "Uart_Comm.h"
 #include "User_Conf.h"
+#include "common_utils.h"
+#include "p_1363_B0_frame.h"
 #include "paras.h"
+#include "protocol_common.h"
 #include "stdio.h"
 #include "stdlib.h"
 #include "string.h"
 
+#define PROTOCOL_ARR_LENGTH 35
+#define ROW_FIRST 0
+#define ROW_SECOND 2
+#define ROW_THREE 4
+#define ROW_LAST 6
+#define PROTOCOL_EN_ALL 0
 //--------------------------全局变量------------------------------------
-uint8_t New_Page_Status = 0;     //需要切换的新页面
-uint8_t Old_Page_Status = 0;     //当前页面
-uint8_t SelectCH_Line_Index = 0; //选择字符所在位置
+uint8_t New_Page_Status     = 0; // 需要切换的新页面
+uint8_t Old_Page_Status     = 0; // 当前页面
+uint8_t SelectCH_Line_Index = 0; // 选择字符所在位置
+
+static PAGE_PROTOCOL_T page_protocol_t = {0};
+
+PAGE_PROTOCOL_T *get_page_protocol_t(void) { return &page_protocol_t; };
+
+#if PROTOCOL_EN_ALL == 1
+static protocol_struct_t protocol_arr[PROTOCOL_ARR_LENGTH] = {
+    {E_CAN_VICTORN, PAGE_CAN_PAGE_1, ROW_FIRST},
+    {E_CAN_PYLON, PAGE_CAN_PAGE_1, ROW_SECOND},
+    {E_CAN_GOODWE, PAGE_CAN_PAGE_1, ROW_THREE},
+    {E_CAN_GROWATT, PAGE_CAN_PAGE_1, ROW_LAST},
+    {E_CAN_VOLTRONIC, PAGE_CAN_PAGE_2, ROW_FIRST},
+    {E_CAN_LXP, PAGE_CAN_PAGE_2, ROW_SECOND},
+    {E_CAN_DEYE, PAGE_CAN_PAGE_2, ROW_THREE},
+    {E_CAN_SOFAR, PAGE_CAN_PAGE_2, ROW_LAST},
+    {E_CAN_SOLIS, PAGE_CAN_PAGE_3, ROW_FIRST},
+    {E_CAN_SUNGROW, PAGE_CAN_PAGE_3, ROW_SECOND},
+    {E_CAN_STUDER, PAGE_CAN_PAGE_3, ROW_THREE},
+    {E_CAN_HUAWEI, PAGE_CAN_PAGE_3, ROW_LAST},
+    {E_CAN_SMA, PAGE_CAN_PAGE_4, ROW_FIRST},
+    {E_CAN_INVT, PAGE_CAN_PAGE_4, ROW_SECOND},
+    {E_CAN_KSTAR, PAGE_CAN_PAGE_4, ROW_THREE},
+    {E_CAN_MUST, PAGE_CAN_PAGE_4, ROW_LAST},
+    {E_CAN_SRNE, PAGE_CAN_PAGE_5, ROW_FIRST},
+    {E_CAN_FOXES, PAGE_CAN_PAGE_5, ROW_SECOND},
+    {E_CAN_BST, PAGE_CAN_PAGE_5, ROW_THREE},
+    {E_CAN_AISWEI, PAGE_CAN_PAGE_5, ROW_LAST},
+    {E_CAN_SCHNEIDER, PAGE_CAN_PAGE_6, ROW_FIRST},
+    {E_485_PYLON, PAGE_RS485_PAGE_1, ROW_FIRST},
+    {E_485_SMK, PAGE_RS485_PAGE_1, ROW_SECOND},
+    {E_485_VOLTRONIC, PAGE_RS485_PAGE_1, ROW_THREE},
+    {E_485_GROWATT, PAGE_RS485_PAGE_1, ROW_LAST},
+    {E_485_SRNE, PAGE_RS485_PAGE_2, ROW_FIRST},
+    {E_485_GP, PAGE_RS485_PAGE_2, ROW_SECOND},
+    {E_485_HENG_RUI, PAGE_RS485_PAGE_2, ROW_THREE},
+    {E_485_WOLONG, PAGE_RS485_PAGE_2, ROW_LAST},
+    {E_485_SACREDSUN, PAGE_RS485_PAGE_3, ROW_FIRST},
+    {E_485_LI_BATTERY_V102, PAGE_RS485_PAGE_3, ROW_SECOND},
+    {E_485_LINGYU, PAGE_RS485_PAGE_3, ROW_THREE},
+    {E_485_ELTEK, PAGE_RS485_PAGE_3, ROW_LAST},
+    {E_485_HUAWEI, PAGE_RS485_PAGE_4, ROW_FIRST},
+    {E_485_VIRTIV, PAGE_RS485_PAGE_4, ROW_SECOND},
+};
+#else
+static protocol_struct_t protocol_arr[PROTOCOL_ARR_LENGTH] = {
+    {E_CAN_VICTORN, PAGE_CAN_PAGE_1, ROW_FIRST},     {E_CAN_PYLON, PAGE_CAN_PAGE_1, ROW_SECOND},
+    {E_CAN_GROWATT, PAGE_CAN_PAGE_1, ROW_THREE},     {E_CAN_LXP, PAGE_CAN_PAGE_1, ROW_LAST},
+    {E_CAN_DEYE, PAGE_CAN_PAGE_2, ROW_FIRST},        {E_CAN_SOFAR, PAGE_CAN_PAGE_2, ROW_SECOND},
+    {E_CAN_SOLIS, PAGE_CAN_PAGE_2, ROW_THREE},       {E_CAN_SMA, PAGE_CAN_PAGE_2, ROW_LAST},
+    {E_CAN_MUST, PAGE_CAN_PAGE_3, ROW_FIRST},        {E_CAN_AISWEI, PAGE_CAN_PAGE_3, ROW_SECOND},
+    {E_485_PYLON, PAGE_RS485_PAGE_1, ROW_FIRST},     {E_485_SRNE, PAGE_RS485_PAGE_1, ROW_SECOND},
+    {E_485_VOLTRONIC, PAGE_RS485_PAGE_1, ROW_THREE}, {E_485_GROWATT, PAGE_RS485_PAGE_1, ROW_LAST},
+};
+#endif
 
 extern uint8_t getValidData;
 uint8_t Time_Buffer[12] = {
-    '2',
-    '0',
-    '9',
-    '9',
-    '0',
-    '0',
-    '0',
-    '0',
-    '0',
-    '0',
-    '0',
-    '0',
+    '2', '0', '9', '9', '0', '0', '0', '0', '0', '0', '0', '0',
 };
 int16_t GetHighTemp();
 uint16_t GetHighBatVol();
@@ -48,29 +102,58 @@ uint16_t GetLowBatVol();
  *                                                未选中则显示"--".
  *******************************************************************************/
 void Show_SelectCh(uint8_t Line_Num) {
-    Lcd_showStringEN(0, 0 * 8, "--", 0);
-    Lcd_showStringEN(2, 0 * 8, "--", 0);
-    Lcd_showStringEN(4, 0 * 8, "--", 0);
-    Lcd_showStringEN(6, 0 * 8, "--", 0);
+    Lcd_showStringEN(ROW_FIRST, 0 * 8, "--", 0);
+    Lcd_showStringEN(ROW_SECOND, 0 * 8, "--", 0);
+    Lcd_showStringEN(ROW_THREE, 0 * 8, "--", 0);
+    Lcd_showStringEN(ROW_LAST, 0 * 8, "--", 0);
     switch (Line_Num) {
-        case 0: Lcd_showStringEN(0, 0 * 8, "->", 1); break;
-
-        case 1: Lcd_showStringEN(2, 0 * 8, "->", 1); break;
-
-        case 2: Lcd_showStringEN(4, 0 * 8, "->", 1); break;
-
-        case 3: Lcd_showStringEN(6, 0 * 8, "->", 1); break;
-
+        case 0: Lcd_showStringEN(ROW_FIRST, 0 * 8, "->", 1); break;
+        case 1: Lcd_showStringEN(ROW_SECOND, 0 * 8, "->", 1); break;
+        case 2: Lcd_showStringEN(ROW_THREE, 0 * 8, "->", 1); break;
+        case 3: Lcd_showStringEN(ROW_LAST, 0 * 8, "->", 1); break;
         default: break;
     }
 
-    if (Old_Page_Status == PAGE_SYSTEMSET) {
-        Lcd_showStringEN(4, 0 * 8, "  ", 0);
-        Lcd_showStringEN(6, 0 * 8, "  ", 0);
+    switch (Old_Page_Status) {
+        case PAGE_MENU_2:
+        case PAGE_SYSTEMSET:
+        case PAGE_PARASET:
+#if PROTOCOL_EN_ALL == 1
+        case PAGE_RS485_PAGE_4:
+            Lcd_showStringEN(ROW_THREE, 0 * 8, "  ", 0);
+            Lcd_showStringEN(ROW_LAST, 0 * 8, "  ", 0);
+            break;
+        case PAGE_CAN_PAGE_6:
+            Lcd_showStringEN(ROW_SECOND, 0 * 8, "  ", 0);
+            Lcd_showStringEN(ROW_THREE, 0 * 8, "  ", 0);
+            Lcd_showStringEN(ROW_LAST, 0 * 8, "  ", 0);
+            break;
+#else
+        case PAGE_CAN_PAGE_3:
+            Lcd_showStringEN(ROW_THREE, 0 * 8, "  ", 0);
+            Lcd_showStringEN(ROW_LAST, 0 * 8, "  ", 0);
+            break;
+#endif
+        default: break;
     }
-    if (Old_Page_Status == PAGE_PARASET) {
-        Lcd_showStringEN(4, 0 * 8, "  ", 0);
-        Lcd_showStringEN(6, 0 * 8, "  ", 0);
+
+    uint8_t is_exist = 0;
+    uint8_t go_row   = 0;
+    for (int i = 0; i < PROTOCOL_ARR_LENGTH; ++i) {
+        if (protocol_arr[i].protocol_page == Old_Page_Status) {
+            /*APP_PRINT("page_protocol_t->rs485_protocol : 0x%02X, \n", page_protocol_t.rs485_protocol)
+            APP_PRINT("page_protocol_t->can_protocol : 0x%02X,\n", page_protocol_t.can_protocol)
+            APP_PRINT("protocol_arr[i].index : 0x%02X,\n", protocol_arr[i].index)*/
+            if ((page_protocol_t.rs485_protocol > E_CAN_MAX_NUM && page_protocol_t.rs485_protocol == protocol_arr[i].index)
+                || (page_protocol_t.can_protocol < E_CAN_MAX_NUM && page_protocol_t.can_protocol == protocol_arr[i].index)) {
+                is_exist = 1;
+                go_row   = protocol_arr[i].protocol_row;
+                break;
+            }
+        }
+    }
+    if (is_exist) {
+        Lcd_showChar6_8(go_row, 15 * 8 - 3, '^', 0);
     }
 }
 
@@ -79,7 +162,7 @@ void Show_SelectCh(uint8_t Line_Num) {
 // Description:
 //======================================================================
 void Page_Welcome_1(void) {
-//    Page_Welcome();
+    // Page_Welcome();
     Page_Welcome_new();
     New_Page_Status = PAGE_WELCOME;
 }
@@ -91,49 +174,46 @@ void Show_TemperatureNull(uint8_t Row) { Lcd_showStringEN(Row, 9 * 8, "  -- ", 0
 
 #define enlen_1 (0)
 void Page_Welcome_new(void) {
-
-    //第一种大图
-# if enlen_1 == 1
-//电池
-//    Lcd_showStringENG(2, 2 * 6, "  ", 0);
-    Lcd_showStringENG(2, 1 * 8, "1", 0);//电池—+
-    Lcd_showStringENG(2, 2 * 7, "2", 0);//电池—+
+    // 第一种大图
+#if enlen_1 == 1
+    // 电池
+    //     Lcd_showStringENG(2, 2 * 6, "  ", 0);
+    Lcd_showStringENG(2, 1 * 8, "1", 0); // 电池—+
+    Lcd_showStringENG(2, 2 * 7, "2", 0); // 电池—+
 
     Lcd_showStringENG(2, 4 * 7, "1", 0);
     Lcd_showStringENG(2, 5 * 7, "2", 0);
-//    Lcd_showStringENG(2, 2 * 8, "2", 0);
-//    Lcd_showChar(3, 8 * 8, '#', 0); //show "电芯温度"
-    Lcd_showChar(3, 0 * 8, '~', 0);//空白8*16右半边
-    Lcd_showChar(3, 1 * 8, '}', 0);//空白8*16
-    Lcd_showChar(3, 2 * 8, '}', 0);//空白8*16
-    Lcd_showChar(3, 3 * 8, '}', 0);//空白8*16
-    Lcd_showChar(3, 4 * 8, '}', 0);//空白8*16
-    Lcd_showChar(3, 5 * 8, '}', 0);//空白8*16
+    //    Lcd_showStringENG(2, 2 * 8, "2", 0);
+    //    Lcd_showChar(3, 8 * 8, '#', 0); //show "电芯温度"
+    Lcd_showChar(3, 0 * 8, '~', 0); // 空白8*16右半边
+    Lcd_showChar(3, 1 * 8, '}', 0); // 空白8*16
+    Lcd_showChar(3, 2 * 8, '}', 0); // 空白8*16
+    Lcd_showChar(3, 3 * 8, '}', 0); // 空白8*16
+    Lcd_showChar(3, 4 * 8, '}', 0); // 空白8*16
+    Lcd_showChar(3, 5 * 8, '}', 0); // 空白8*16
 
-    Lcd_showChar(4, 0 * 8, '~', 0);//空白8*16
-    Lcd_showChar(4, 1 * 8, '}', 0);//空白8*16右半边
-    Lcd_showChar(4, 2 * 8, '}', 0);//空白8*16
-    Lcd_showChar(4, 3 * 8, '}', 0);//空白8*16
-    Lcd_showChar(4, 4 * 8, '}', 0);//空白8*16
-    Lcd_showChar(4, 5 * 8, '}', 0);//空白8*16
+    Lcd_showChar(4, 0 * 8, '~', 0); // 空白8*16
+    Lcd_showChar(4, 1 * 8, '}', 0); // 空白8*16右半边
+    Lcd_showChar(4, 2 * 8, '}', 0); // 空白8*16
+    Lcd_showChar(4, 3 * 8, '}', 0); // 空白8*16
+    Lcd_showChar(4, 4 * 8, '}', 0); // 空白8*16
+    Lcd_showChar(4, 5 * 8, '}', 0); // 空白8*16
 
+    // 逆变器上
+    Lcd_showChar(3, 15 * 8, '[', 0); // 逆变器右边
+    //    Lcd_showChar(3, 10 * 8, '}', 0);//空白8*16
+    Lcd_showChar(3, 11 * 8, ';', 1); // 空白8*16
+    Lcd_showChar(3, 12 * 8, ';', 1); // 空白8*16
+    Lcd_showChar(3, 13 * 8, ';', 1); // 空白8*16
+    Lcd_showChar(3, 14 * 8, ';', 1); // 空白8*16
 
-
-//逆变器上
-    Lcd_showChar(3, 15 * 8, '[', 0);//逆变器右边
-//    Lcd_showChar(3, 10 * 8, '}', 0);//空白8*16
-    Lcd_showChar(3, 11 * 8, ';', 1);//空白8*16
-    Lcd_showChar(3, 12 * 8, ';', 1);//空白8*16
-    Lcd_showChar(3, 13 * 8, ';', 1);//空白8*16
-    Lcd_showChar(3, 14 * 8, ';', 1);//空白8*16
-
-    //下
-    Lcd_showChar(4, 15 * 8, '{', 0);//空白8*16半边
-    Lcd_showChar(4, 11 * 8, ':', 1);//空白8*16右半边
-    Lcd_showChar(4, 12 * 8, ':', 1);//空白8*16
-    Lcd_showChar(4, 13 * 8, '?', 1);//逆变器框框
-    Lcd_showChar(4, 14 * 8, '@', 1);//逆变器框框
-//    Lcd_showChar(4, 5 * 8, '}', 0);//空白8*16
+    // 下
+    Lcd_showChar(4, 15 * 8, '{', 0); // 空白8*16半边
+    Lcd_showChar(4, 11 * 8, ':', 1); // 空白8*16右半边
+    Lcd_showChar(4, 12 * 8, ':', 1); // 空白8*16
+    Lcd_showChar(4, 13 * 8, '?', 1); // 逆变器框框
+    Lcd_showChar(4, 14 * 8, '@', 1); // 逆变器框框
+    //    Lcd_showChar(4, 5 * 8, '}', 0);//空白8*16
 
     Lcd_showStringENG(2, 14 * 6, "5", 0);
     Lcd_showStringENG(2, 15 * 6, "3", 0);
@@ -143,54 +223,52 @@ void Page_Welcome_new(void) {
     Lcd_showStringENG(2, 19 * 6, "3", 0);
     Lcd_showStringENG(2, 20 * 6, "4", 0);
 
-    Lcd_showStringENG(3, 8 * 6, ":", 0);//箭头线
-    Lcd_showStringENG(3, 9 * 6, ":", 0);//箭头线
-    Lcd_showStringENG(3, 10 * 6, ":", 0);//箭头线
-    Lcd_showStringENG(3, 11 * 6, ":", 0);//箭头线
-    Lcd_showStringENG(3, 12 * 6, ";", 0);//箭头
-    Lcd_showStringENG(3, 13 * 6, ":", 0);//箭头线
- Show_Current1(4, 4 * 8, PackData.Current); // 72
+    Lcd_showStringENG(3, 8 * 6, ":", 0);       // 箭头线
+    Lcd_showStringENG(3, 9 * 6, ":", 0);       // 箭头线
+    Lcd_showStringENG(3, 10 * 6, ":", 0);      // 箭头线
+    Lcd_showStringENG(3, 11 * 6, ":", 0);      // 箭头线
+    Lcd_showStringENG(3, 12 * 6, ";", 0);      // 箭头
+    Lcd_showStringENG(3, 13 * 6, ":", 0);      // 箭头线
+    Show_Current1(4, 4 * 8, PackData.Current); // 72
 
 #else
-    Lcd_showStringENG(2, 1 * 3, "(", 0);//电池—+左
-    Lcd_showStringENG(2, 2 * 4, ")", 0);//电池—+
+    Lcd_showStringENG(2, 1 * 3, "(", 0); // 电池—+左
+    Lcd_showStringENG(2, 2 * 4, ")", 0); // 电池—+
 
     Lcd_showStringENG(2, 26 * 1, "(", 0);
     Lcd_showStringENG(2, 8 * 4, ")", 0);
-//    Lcd_showStringENG(2, 2 * 8, "2", 0);
-//    Lcd_showChar(3, 8 * 8, '#', 0); //show "电芯温度"
-    Lcd_showChar(3, 0 * 8, '(', 0);//空白8*16
-    Lcd_showChar(3, 1 * 8, ')', 0);//空白8*16
-    Lcd_showChar(3, 2 * 8, '}', 0);//空白8*16
-    Lcd_showChar(3, 3 * 8, '+', 0);//空白8*16
-    Lcd_showChar(3, 4 * 8, '*', 0);//空白8*16右半边
-//    Lcd_showChar(3, 5 * 8, '}', 0);//空白8*16
+    //    Lcd_showStringENG(2, 2 * 8, "2", 0);
+    //    Lcd_showChar(3, 8 * 8, '#', 0); //show "电芯温度"
+    Lcd_showChar(3, 0 * 8, '(', 0); // 空白8*16
+    Lcd_showChar(3, 1 * 8, ')', 0); // 空白8*16
+    Lcd_showChar(3, 2 * 8, '}', 0); // 空白8*16
+    Lcd_showChar(3, 3 * 8, '+', 0); // 空白8*16
+    Lcd_showChar(3, 4 * 8, '*', 0); // 空白8*16右半边
+    //    Lcd_showChar(3, 5 * 8, '}', 0);//空白8*16
 
-    Lcd_showChar(4, 0 * 8, '<', 0);//空白8*16右半边
-    Lcd_showChar(4, 1 * 8, '<', 0);//空白8*16
-    Lcd_showChar(4, 2 * 8, '<', 0);//空白8*16
-    Lcd_showChar(4, 3 * 8, '<', 0);//空白8*16
-    Lcd_showChar(4, 4 * 8, '<', 0);//空白8*16
-//    Lcd_showChar(4, 5 * 8, '}', 0);//空白8*16
+    Lcd_showChar(4, 0 * 8, '<', 0); // 空白8*16右半边
+    Lcd_showChar(4, 1 * 8, '<', 0); // 空白8*16
+    Lcd_showChar(4, 2 * 8, '<', 0); // 空白8*16
+    Lcd_showChar(4, 3 * 8, '<', 0); // 空白8*16
+    Lcd_showChar(4, 4 * 8, '<', 0); // 空白8*16
+    //    Lcd_showChar(4, 5 * 8, '}', 0);//空白8*16
 
-//逆变器上
-//    Lcd_showChar(3, 10 * 8, '}', 0);//空白8*16
-//    Lcd_showChar(3, 11 * 8, ';', 1);//空白8*16
-    Lcd_showChar(3, 12 * 8, '!', 0);//空白8*16
-    Lcd_showChar(3, 13 * 8, ';', 1);//空白8*16
-    Lcd_showChar(3, 14 * 8, ';', 1);//空白8*16
-    Lcd_showChar(3, 15 * 8, '[', 0);//逆变器右边
+    // 逆变器上
+    //     Lcd_showChar(3, 10 * 8, '}', 0);//空白8*16
+    //     Lcd_showChar(3, 11 * 8, ';', 1);//空白8*16
+    Lcd_showChar(3, 12 * 8, '!', 0); // 空白8*16
+    Lcd_showChar(3, 13 * 8, ';', 1); // 空白8*16
+    Lcd_showChar(3, 14 * 8, ';', 1); // 空白8*16
+    Lcd_showChar(3, 15 * 8, '[', 0); // 逆变器右边
 
-    //下
+    // 下
 
-//    Lcd_showChar(4, 11 * 8, ':', 1);//空白8*16右半边
-    Lcd_showChar(4, 12 * 8, '"', 0);//空白8*16
-    Lcd_showChar(4, 13 * 8, ':', 1);//空白8*16
-    Lcd_showChar(4, 14 * 8, '?', 1);//逆变器框框
-    Lcd_showChar(4, 15 * 8, '@', 1);//逆变器框框
-//    Lcd_showChar(4, 15 * 8, '{', 0);//空白8*16半边
-
-
+    //    Lcd_showChar(4, 11 * 8, ':', 1);//空白8*16右半边
+    Lcd_showChar(4, 12 * 8, '"', 0); // 空白8*16
+    Lcd_showChar(4, 13 * 8, ':', 1); // 空白8*16
+    Lcd_showChar(4, 14 * 8, '?', 1); // 逆变器框框
+    Lcd_showChar(4, 15 * 8, '@', 1); // 逆变器框框
+    //    Lcd_showChar(4, 15 * 8, '{', 0);//空白8*16半边
 
     Lcd_showStringENG(2, 16 * 6, "0", 0);
     Lcd_showStringENG(2, 17 * 6, "3", 0);
@@ -199,58 +277,53 @@ void Page_Welcome_new(void) {
     Lcd_showStringENG(2, 20 * 6, "3", 0);
     Lcd_showStringENG(2, 21 * 6, "3", 0);
 
+    if (PackData.Current == 0) {
+        Lcd_showStringENG(3, 11 * 6, ":", 0); // 箭头线
+        Lcd_showChar(4, 5 * 8, ' ', 0);
+        Lcd_showChar(4, 6 * 8, ' ', 0);
+        Lcd_showChar(4, 7 * 8, ' ', 0);
+        Lcd_showChar(4, 8 * 8, '-', 0);
+        Lcd_showChar(4, 9 * 8, '-', 0);
+        Lcd_showChar(4, 10 * 8, '-', 0);
 
-    if(PackData.Current == 0){
-        Lcd_showStringENG(3, 11 * 6, ":", 0);//箭头线
-        Lcd_showChar(4, 5*8, ' ', 0);
-        Lcd_showChar(4, 6*8, ' ', 0);
-        Lcd_showChar(4, 7*8, ' ', 0);
-        Lcd_showChar(4, 8*8, '-', 0);
-        Lcd_showChar(4, 9*8, '-', 0);
-        Lcd_showChar(4, 10*8, '-', 0);
-
-    } else if ((PackData.Current > 0)){//300A
+    } else if ((PackData.Current > 0)) {           // 300A
         Show_Current1(4, 5 * 8, PackData.Current); // 72
-        Lcd_showStringENG(3, 11 * 6, "<", 0);//充电箭头
-    } else if (PackData.Current < 0){
+        Lcd_showStringENG(3, 11 * 6, "<", 0);      // 充电箭头
+    } else if (PackData.Current < 0) {
         Show_Current1(4, 5 * 8, PackData.Current); // 72
-        Lcd_showStringENG(3, 11 * 6, ";", 0);//放电箭头
+        Lcd_showStringENG(3, 11 * 6, ";", 0);      // 放电箭头
     }
-    Lcd_showChar(4, 11 * 8, 'A', 0); //show "A"
-    Lcd_showStringENG(3, 7 * 6, ":", 0);//箭头线
-    Lcd_showStringENG(3, 8 * 6, ":", 0);//箭头线
-    Lcd_showStringENG(3, 9 * 6, ":", 0);//箭头线
-    Lcd_showStringENG(3, 10 * 6, ":", 0);//箭头线
-    Lcd_showStringENG(3, 12 * 6, ":", 0);//
-    Lcd_showStringENG(3, 13 * 6, ":", 0);//箭头线
-    Lcd_showStringENG(3, 14 * 6, ":", 0);//箭头线
-    Lcd_showStringENG(3, 15 * 6, ":", 0);//箭头线
+    Lcd_showChar(4, 11 * 8, 'A', 0);      // show "A"
+    Lcd_showStringENG(3, 7 * 6, ":", 0);  // 箭头线
+    Lcd_showStringENG(3, 8 * 6, ":", 0);  // 箭头线
+    Lcd_showStringENG(3, 9 * 6, ":", 0);  // 箭头线
+    Lcd_showStringENG(3, 10 * 6, ":", 0); // 箭头线
+    Lcd_showStringENG(3, 12 * 6, ":", 0); //
+    Lcd_showStringENG(3, 13 * 6, ":", 0); // 箭头线
+    Lcd_showStringENG(3, 14 * 6, ":", 0); // 箭头线
+    Lcd_showStringENG(3, 15 * 6, ":", 0); // 箭头线
 
 #endif
 
-//#if 0
-//总压
+    // #if 0
+    // 总压
     Show_TotalVoltage1(0, 0 * 8, (PackData.Vsum));
-    Lcd_showChar(0, 4 * 8, 'V', 0); //show "A"
+    Lcd_showChar(0, 4 * 8, 'V', 0); // show "A"
 
-
-    //SOC 最后一行前面
+    // SOC 最后一行前面
     Lcd_showChar(0, 15 * 8, '%', 0);
 
-    if (((Soc / 100) % 10) == 0)
-        Lcd_showChar6_8(0, 12 * 8, ' ', 0); // SOC
+    if (((Soc / 100) % 10) == 0) Lcd_showChar6_8(0, 12 * 8, ' ', 0); // SOC
     else
-        Lcd_showChar(0, 12 * 8, (uint8_t)((Soc / 100) % 10) + '0', 0);
+        Lcd_showChar(0, 12 * 8, (uint8_t) ((Soc / 100) % 10) + '0', 0);
 
-    if ((((Soc / 10) % 10) == 0) && (((Soc / 100) % 10) == 0))
-        Lcd_showChar6_8(0, 13 * 8, ' ', 0);
+    if ((((Soc / 10) % 10) == 0) && (((Soc / 100) % 10) == 0)) Lcd_showChar6_8(0, 13 * 8, ' ', 0);
     else
-    Lcd_showChar(0, 13 * 8, (uint8_t)((Soc / 10) % 10) + '0', 0);
-    Lcd_showChar(0, 14 * 8, (uint8_t)(Soc % 10) + '0', 0);
+        Lcd_showChar(0, 13 * 8, (uint8_t) ((Soc / 10) % 10) + '0', 0);
+    Lcd_showChar(0, 14 * 8, (uint8_t) (Soc % 10) + '0', 0);
 
-
-    Lcd_showChar(6, 3 * 8, 'A', 0); //show "A"
-    Lcd_showChar(6, 4 * 8, 'H', 0); //show "A"
+    Lcd_showChar(6, 3 * 8, 'A', 0); // show "A"
+    Lcd_showChar(6, 4 * 8, 'H', 0); // show "A"
 #if 0
     if (PackData.Rm >= 10000) {     // 剩余容量
     Lcd_showChar(6, 0 * 8, (uint8_t)(PackData.Rm / 10000) + '0', 0);
@@ -266,37 +339,36 @@ void Page_Welcome_new(void) {
 
 #endif
     if (PackData.Fcc >= 10000) { // 满充容量
-    Lcd_showChar(6, 0 * 8, (uint8_t)(PackData.Fcc / 10000) + '0', 0);
-    Lcd_showChar(6, 1 * 8, (uint8_t)((PackData.Fcc / 1000) % 10) + '0', 0);
+        Lcd_showChar(6, 0 * 8, (uint8_t) (PackData.Fcc / 10000) + '0', 0);
+        Lcd_showChar(6, 1 * 8, (uint8_t) ((PackData.Fcc / 1000) % 10) + '0', 0);
     } else if (PackData.Fcc >= 1000) {
-    Lcd_showChar(6, 0 * 8, ' ', 0);
-    Lcd_showChar(6, 1 * 8, (uint8_t)(PackData.Fcc / 1000) + '0', 0);
+        Lcd_showChar(6, 0 * 8, ' ', 0);
+        Lcd_showChar(6, 1 * 8, (uint8_t) (PackData.Fcc / 1000) + '0', 0);
     } else {
-    Lcd_showChar(6, 0 * 8, ' ', 0);
-    Lcd_showChar(6, 1 * 8, ' ', 0);
+        Lcd_showChar(6, 0 * 8, ' ', 0);
+        Lcd_showChar(6, 1 * 8, ' ', 0);
     }
-    Lcd_showChar(6, 2 * 8, (uint8_t)((PackData.Fcc / 100) % 10) + '0', 0);
-    //保护状态
-    if (PackData.Prp_State.BitName.bCellVoltOV){
+    Lcd_showChar(6, 2 * 8, (uint8_t) ((PackData.Fcc / 100) % 10) + '0', 0);
+    // 保护状态
+    if (PackData.Prp_State.BitName.bCellVoltOV) {
         Lcd_showChar(6, 13 * 8, 'O', 0);
         Lcd_showChar(6, 14 * 8, 'V', 0);
-    } else if (PackData.Prp_State.BitName.bCellVoltUL){
+    } else if (PackData.Prp_State.BitName.bCellVoltUL) {
         Lcd_showChar(6, 13 * 8, 'L', 0);
         Lcd_showChar(6, 14 * 8, 'V', 0);
-    }else if (PackData.Prp_State.BitName.bTempOV){
+    } else if (PackData.Prp_State.BitName.bTempOV) {
         Lcd_showChar(6, 13 * 8, 'O', 0);
         Lcd_showChar(6, 14 * 8, 'T', 0);
-    }else if (PackData.Prp_State.BitName.bTempUL){
+    } else if (PackData.Prp_State.BitName.bTempUL) {
         Lcd_showChar(6, 13 * 8, 'L', 0);
         Lcd_showChar(6, 14 * 8, 'T', 0);
-    }else if (PackData.Prp_State.BitName.bCurrOV){
+    } else if (PackData.Prp_State.BitName.bCurrOV) {
         Lcd_showChar(6, 13 * 8, 'O', 0);
         Lcd_showChar(6, 14 * 8, 'C', 0);
-    }
-    else if (PackData.Prp_State.BitName.bShortFault){
+    } else if (PackData.Prp_State.BitName.bShortFault) {
         Lcd_showChar(6, 13 * 8, 'S', 0);
         Lcd_showChar(6, 14 * 8, 'C', 0);
-    }else {
+    } else {
         Lcd_showChar(6, 13 * 8, '-', 0);
         Lcd_showChar(6, 14 * 8, '-', 0);
     }
@@ -337,64 +409,71 @@ void Page_Welcome(void) {
     /*SOH*/
     if (((SOH / 100) % 10) == 0) Lcd_showCha6_7(0, 17 * 6, ' ', 0);
     else
-        Lcd_showCha6_7(0, 17 * 6, (uint8_t)((SOH / 100) % 10) + '0', 1);
+        Lcd_showCha6_7(0, 17 * 6, (uint8_t) ((SOH / 100) % 10) + '0', 1);
 
     if ((((SOH / 10) % 10) == 0) && (((SOH / 100) % 10) == 0)) Lcd_showCha6_7(0, 18 * 6, ' ', 0);
     else
-    Lcd_showCha6_7(0, 18 * 6, (uint8_t)((SOH / 10) % 10) + '0', 1);
-    Lcd_showCha6_7(0, 19 * 6, (uint8_t)(SOH % 10) + '0', 1);
-    Lcd_showStringENG(0, 20 * 6, " ", 0); //反白
+        Lcd_showCha6_7(0, 18 * 6, (uint8_t) ((SOH / 10) % 10) + '0', 1);
+    Lcd_showCha6_7(0, 19 * 6, (uint8_t) (SOH % 10) + '0', 1);
+    Lcd_showStringENG(0, 20 * 6, " ", 0); // 反白
 
     /*首页图片*/
-    Lcd_showChar(3, 8 * 8, '#', 0); //show "电芯温度"
-    Lcd_showChar(5, 8 * 8, '!', 0); //show SOC图片
-    Lcd_showChar(5, 9 * 8, '&', 0); //show "SOC图片"
-    Lcd_showChar(1, 8 * 8, '+', 0); //show "环境温度图片"
+    Lcd_showChar(3, 8 * 8, '#', 0); // show "电芯温度"
+    Lcd_showChar(5, 8 * 8, '!', 0); // show SOC图片
+    Lcd_showChar(5, 9 * 8, '&', 0); // show "SOC图片"
+    Lcd_showChar(1, 8 * 8, '+', 0); // show "环境温度图片"
 
     /*首页总压*/
-    Lcd_showChar(3, 8 * 6, 'V', 0); //show "V"
-
-    if(PackData.Vsum==0){
-        PackData.Vsum=0;
-    }
+    Lcd_showChar(3, 8 * 6, 'V', 0); // show "V"
 
     Show_TotalVoltage1(3, 0 * 8, (PackData.Vsum));
 
     /*充放电电流*/
-    Lcd_showChar(1, 8 * 6, 'A', 0); //show "A"
+    Lcd_showChar(1, 8 * 6, 'A', 0); // show "A"
 
     Show_Current1(1, 0 * 8, (PackData.Current));
 
     /*剩余容量*/
-    Lcd_showChar(5, 5 * 8, 'A', 0); //show "A"
-    Lcd_showChar(5, 6 * 8, 'H', 0); //show "H"
+    Lcd_showChar(5, 5 * 8, 'A', 0); // show "A"
+    Lcd_showChar(5, 6 * 8, 'H', 0); // show "H"
 
     /*电芯温度*/
     Show_Temperature1(3, 9 * 8, GetHighTemp());
-    Lcd_showChar6_16(3, 13 * 8, '#', 0); //摄氏度
+    Lcd_showChar6_16(3, 13 * 8, '#', 0); // 摄氏度
 
     /*环境温度*/
     Show_Temperature1(1, 9 * 8, PackData.s16EnvirTemp);
-    Lcd_showChar6_16(1, 13 * 8, '#', 0); //摄氏度
+    Lcd_showChar6_16(1, 13 * 8, '#', 0); // 摄氏度
 }
 
 //======================================================================
-// Function:	Page_Menu()
+// Function:	Page_Menu_1()
 // Description:菜单页面
 //======================================================================
-void Page_Menu(void) {
+void Page_Menu_1(void) {
     Show_SelectCh(SelectCH_Line_Index);
-    Lcd_showStringEN(0, 2 * 8, "BMS Parameter   ", 0);
-    Lcd_showChar6_8(0, 15 * 8, '<', 0); // show "》"
+    Lcd_showStringEN(ROW_FIRST, 2 * 8, "BMS Parameter   ", 0);
+    Lcd_showChar6_8(ROW_FIRST, 15 * 8, '<', 0); // show "》"
 
-    Lcd_showStringEN(2, 2 * 8, "Battery Status  ", 0);
-    Lcd_showChar6_8(2, 15 * 8, '<', 0); // show "》"
+    Lcd_showStringEN(ROW_SECOND, 2 * 8, "Battery Status  ", 0);
+    Lcd_showChar6_8(ROW_SECOND, 15 * 8, '<', 0); // show "》"
 
-    Lcd_showStringEN(4, 2 * 8, "GYRO Status     ", 0);
-    Lcd_showChar6_8(4, 15 * 8, '<', 0); // show "》"
+    Lcd_showStringEN(ROW_THREE, 2 * 8, "GYRO Status     ", 0);
+    Lcd_showChar6_8(ROW_THREE, 15 * 8, '<', 0); // show "》"
 
-    Lcd_showStringEN(6, 2 * 8, "Version Number  ", 0);
-    Lcd_showChar6_8(6, 15 * 8, '<', 0); // show "》"
+    Lcd_showStringEN(ROW_LAST, 2 * 8, "Version Number  ", 0);
+    Lcd_showChar6_8(ROW_LAST, 15 * 8, '<', 0); // show "》"
+}
+//======================================================================
+// Function:	Page_Menu_2()
+// Description:菜单页面
+//======================================================================
+void Page_Menu_2(void) {
+    Show_SelectCh(SelectCH_Line_Index);
+    Lcd_showStringEN(ROW_FIRST, 2 * 8, "CAN Protocol    ", 0);
+    Lcd_showChar6_8(ROW_FIRST, 15 * 8, '<', 0); // show "》"
+    Lcd_showStringEN(ROW_SECOND, 2 * 8, "RS485 Protocol  ", 0);
+    Lcd_showChar6_8(ROW_SECOND, 15 * 8, '<', 0); // show "》"
 }
 
 //======================================================================
@@ -404,12 +483,12 @@ void Page_Menu(void) {
 void Page_Analog_1(void) {
     Show_SelectCh(SelectCH_Line_Index);
 
-    Lcd_showStringEN(0, 2 * 8, "Voltage:         V", 0);
-    Lcd_showStringEN(2, 2 * 8, "Current:         A", 0);
-    Lcd_showStringEN(4, 2 * 8, "CellTemp      ", 0);
-    Lcd_showStringEN(6, 2 * 8, "CellVolt      ", 0);
-    Lcd_showChar6_8(4, 11 * 8, '<', 0); // show "》"
-    Lcd_showChar6_8(6, 11 * 8, '<', 0); // show "》"
+    Lcd_showStringEN(ROW_FIRST, 2 * 8, "Voltage:         V", 0);
+    Lcd_showStringEN(ROW_SECOND, 2 * 8, "Current:         A", 0);
+    Lcd_showStringEN(ROW_THREE, 2 * 8, "CellTemp      ", 0);
+    Lcd_showStringEN(ROW_LAST, 2 * 8, "CellVolt      ", 0);
+    Lcd_showChar6_8(ROW_THREE, 11 * 8, '<', 0); // show "》"
+    Lcd_showChar6_8(ROW_LAST, 11 * 8, '<', 0);  // show "》"
 }
 
 //======================================================================
@@ -419,14 +498,14 @@ void Page_Analog_1(void) {
 void Page_Status(void) {
     Show_SelectCh(SelectCH_Line_Index);
 
-    Lcd_showStringEN(0, 2 * 8, "Status:       ", 0);
-    Lcd_showStringEN(2, 2 * 8, "Alarm Status ", 0);
-    Lcd_showStringEN(4, 2 * 8, "Protect Status", 0);
-    Lcd_showStringEN(6, 2 * 8, "Failure Alarm", 0);
+    Lcd_showStringEN(ROW_FIRST, 2 * 8, "Status:       ", 0);
+    Lcd_showStringEN(ROW_SECOND, 2 * 8, "Alarm Status ", 0);
+    Lcd_showStringEN(ROW_THREE, 2 * 8, "Protect Status", 0);
+    Lcd_showStringEN(ROW_LAST, 2 * 8, "Failure Alarm", 0);
 
-    Lcd_showChar6_8(2, 15 * 8, '<', 0); // show "》"
-    Lcd_showChar6_8(4, 15 * 8, '<', 0); // show "》"
-    Lcd_showChar6_8(6, 15 * 8, '<', 0); // show "》"
+    Lcd_showChar6_8(ROW_SECOND, 15 * 8, '<', 0); // show "》"
+    Lcd_showChar6_8(ROW_THREE, 15 * 8, '<', 0);  // show "》"
+    Lcd_showChar6_8(ROW_LAST, 15 * 8, '<', 0);   // show "》"
 }
 
 /*******************************************************************************
@@ -438,8 +517,8 @@ void Page_Status(void) {
 void Page_ParaSet(void) {
     Show_SelectCh(SelectCH_Line_Index);
 
-    Lcd_showStringEN(0, 2 * 8, "Set X axis:   ", 0);
-    Lcd_showStringEN(2, 2 * 8, "Place Option: ", 0);
+    Lcd_showStringEN(ROW_FIRST, 2 * 8, "Set X axis:   ", 0);
+    Lcd_showStringEN(ROW_SECOND, 2 * 8, "Place Option: ", 0);
 }
 
 //======================================================================
@@ -449,10 +528,10 @@ void Page_ParaSet(void) {
 void Page_SystemSet(void) {
     Show_SelectCh(SelectCH_Line_Index);
 
-    Lcd_showStringEN(0, 2 * 8, "BMS Version  ", 0);
-    Lcd_showStringEN(2, 2 * 8, "LCD Version  ", 0);
-    Lcd_showChar6_8(0, 15 * 8, '<', 0); // show "��"
-    Lcd_showChar6_8(2, 15 * 8, '<', 0); // show "��"
+    Lcd_showStringEN(ROW_FIRST, 2 * 8, "BMS Version  ", 0);
+    Lcd_showStringEN(ROW_SECOND, 2 * 8, "LCD Version  ", 0);
+    Lcd_showChar6_8(ROW_FIRST, 15 * 8, '<', 0);  // show "��"
+    Lcd_showChar6_8(ROW_SECOND, 15 * 8, '<', 0); // show "��"
 }
 
 //======================================================================
@@ -460,38 +539,38 @@ void Page_SystemSet(void) {
 // Description:
 //======================================================================
 void Page_Temperature_1(void) {
-    Lcd_showStringEN(0, 0 * 6, "--Temp01           C", 0);
-    Lcd_showStringEN(2, 0 * 6, "--Temp02           C", 0);
-    Lcd_showStringEN(4, 0 * 6, "--Temp03           C", 0);
-    Lcd_showStringEN(6, 0 * 6, "--Temp04           C", 0);
-    Lcd_showChar6_8(0, 18 * 6, '_', 0); // show "摄氏度"
-    Lcd_showChar6_8(2, 18 * 6, '_', 0);
-    Lcd_showChar6_8(4, 18 * 6, '_', 0);
-    Lcd_showChar6_8(6, 18 * 6, '_', 0);
+    Lcd_showStringEN(ROW_FIRST, 0 * 6, "--Temp01           C", 0);
+    Lcd_showStringEN(ROW_SECOND, 0 * 6, "--Temp02           C", 0);
+    Lcd_showStringEN(ROW_THREE, 0 * 6, "--Temp03           C", 0);
+    Lcd_showStringEN(ROW_LAST, 0 * 6, "--Temp04           C", 0);
+    Lcd_showChar6_8(ROW_FIRST, 18 * 6, '_', 0); // show "摄氏度"
+    Lcd_showChar6_8(ROW_SECOND, 18 * 6, '_', 0);
+    Lcd_showChar6_8(ROW_THREE, 18 * 6, '_', 0);
+    Lcd_showChar6_8(ROW_LAST, 18 * 6, '_', 0);
 }
 //======================================================================
 // Function:	Page_Temperature_2()
 // Description: 用8路NTC时可打开
 //======================================================================
 void Page_Temperature_2(void) {
-    Lcd_showStringEN(0, 0 * 6, "--Temp05:      C", 0);
-    Lcd_showStringEN(2, 0 * 6, "--Temp06:      C", 0);
-    Lcd_showStringEN(4, 0 * 6, "--Temp07:      C", 0);
-    Lcd_showStringEN(6, 0 * 6, "--Temp08:      C", 0);
-    Lcd_showChar6_8(0, 18 * 6, '_', 0); // show "��C"
-    Lcd_showChar6_8(2, 18 * 6, '_', 0); // show "��C"
-    Lcd_showChar6_8(4, 18 * 6, '_', 0); // show "��C"
-    Lcd_showChar6_8(6, 18 * 6, '_', 0); // show "��C"
+    Lcd_showStringEN(ROW_FIRST, 0 * 6, "--Temp05:      C", 0);
+    Lcd_showStringEN(ROW_SECOND, 0 * 6, "--Temp06:      C", 0);
+    Lcd_showStringEN(ROW_THREE, 0 * 6, "--Temp07:      C", 0);
+    Lcd_showStringEN(ROW_LAST, 0 * 6, "--Temp08:      C", 0);
+    Lcd_showChar6_8(ROW_FIRST, 18 * 6, '_', 0);  // show "��C"
+    Lcd_showChar6_8(ROW_SECOND, 18 * 6, '_', 0); // show "��C"
+    Lcd_showChar6_8(ROW_THREE, 18 * 6, '_', 0);  // show "��C"
+    Lcd_showChar6_8(ROW_LAST, 18 * 6, '_', 0);   // show "��C"
 }
 //======================================================================
 // Function:	Page_Temperature_3()
 // Description:
 //======================================================================
 void Page_Temperature_3(void) {
-    Lcd_showStringEN(0, 0 * 6, "MOS Temp           C", 0); // PCB--> MOS
-    Lcd_showStringEN(2, 0 * 6, "Env Temp           C", 0);
-    Lcd_showChar6_8(0, 18 * 6, '_', 0); // show "��C"
-    Lcd_showChar6_8(2, 18 * 6, '_', 0); // show "��C"
+    Lcd_showStringEN(ROW_FIRST, 0 * 6, "MOS Temp           C", 0); // PCB--> MOS
+    Lcd_showStringEN(ROW_SECOND, 0 * 6, "Env Temp           C", 0);
+    Lcd_showChar6_8(ROW_FIRST, 18 * 6, '_', 0);  // show "��C"
+    Lcd_showChar6_8(ROW_SECOND, 18 * 6, '_', 0); // show "��C"
 }
 
 //======================================================================
@@ -499,10 +578,10 @@ void Page_Temperature_3(void) {
 // Description:
 //======================================================================
 void Page_Voltage_1(void) {
-    Lcd_showStringEN(0, 0 * 8, "--Cell01          mV", 0);
-    Lcd_showStringEN(2, 0 * 8, "--Cell02          mV", 0);
-    Lcd_showStringEN(4, 0 * 8, "--Cell03          mV", 0);
-    Lcd_showStringEN(6, 0 * 8, "--Cell04          mV", 0);
+    Lcd_showStringEN(ROW_FIRST, 0 * 8, "--Cell01          mV", 0);
+    Lcd_showStringEN(ROW_SECOND, 0 * 8, "--Cell02          mV", 0);
+    Lcd_showStringEN(ROW_THREE, 0 * 8, "--Cell03          mV", 0);
+    Lcd_showStringEN(ROW_LAST, 0 * 8, "--Cell04          mV", 0);
 }
 
 //======================================================================
@@ -510,10 +589,10 @@ void Page_Voltage_1(void) {
 // Description:
 //======================================================================
 void Page_Voltage_2(void) {
-    Lcd_showStringEN(0, 0 * 8, "--Cell05          mV", 0);
-    Lcd_showStringEN(2, 0 * 8, "--Cell06          mV", 0);
-    Lcd_showStringEN(4, 0 * 8, "--Cell07          mV", 0);
-    Lcd_showStringEN(6, 0 * 8, "--Cell08          mV", 0);
+    Lcd_showStringEN(ROW_FIRST, 0 * 8, "--Cell05          mV", 0);
+    Lcd_showStringEN(ROW_SECOND, 0 * 8, "--Cell06          mV", 0);
+    Lcd_showStringEN(ROW_THREE, 0 * 8, "--Cell07          mV", 0);
+    Lcd_showStringEN(ROW_LAST, 0 * 8, "--Cell08          mV", 0);
 }
 
 //======================================================================
@@ -521,10 +600,10 @@ void Page_Voltage_2(void) {
 // Description:
 //======================================================================
 void Page_Voltage_3(void) {
-    Lcd_showStringEN(0, 0 * 8, "--Cell09          mV", 0);
-    Lcd_showStringEN(2, 0 * 8, "--Cell10          mV", 0);
-    Lcd_showStringEN(4, 0 * 8, "--Cell11          mV", 0);
-    Lcd_showStringEN(6, 0 * 8, "--Cell12          mV", 0);
+    Lcd_showStringEN(ROW_FIRST, 0 * 8, "--Cell09          mV", 0);
+    Lcd_showStringEN(ROW_SECOND, 0 * 8, "--Cell10          mV", 0);
+    Lcd_showStringEN(ROW_THREE, 0 * 8, "--Cell11          mV", 0);
+    Lcd_showStringEN(ROW_LAST, 0 * 8, "--Cell12          mV", 0);
 }
 
 //======================================================================
@@ -532,10 +611,10 @@ void Page_Voltage_3(void) {
 // Description:
 //======================================================================
 void Page_Voltage_4(void) {
-    Lcd_showStringEN(0, 0 * 8, "--Cell13          mV", 0);
-    Lcd_showStringEN(2, 0 * 8, "--Cell14          mV", 0);
-    Lcd_showStringEN(4, 0 * 8, "--Cell15          mV", 0);
-    Lcd_showStringEN(6, 0 * 8, "--Cell16          mV", 0);
+    Lcd_showStringEN(ROW_FIRST, 0 * 8, "--Cell13          mV", 0);
+    Lcd_showStringEN(ROW_SECOND, 0 * 8, "--Cell14          mV", 0);
+    Lcd_showStringEN(ROW_THREE, 0 * 8, "--Cell15          mV", 0);
+    Lcd_showStringEN(ROW_LAST, 0 * 8, "--Cell16          mV", 0);
 }
 
 //======================================================================
@@ -543,10 +622,10 @@ void Page_Voltage_4(void) {
 // Description:
 //======================================================================
 void Page_Capacity(void) {
-    Lcd_showStringEN(0, 0 * 8, "   SOC    :        %", 0);
-    Lcd_showStringEN(2, 0 * 8, "Nominal   :        AH", 0);
-    Lcd_showStringEN(4, 0 * 8, "Remain    :        AH", 0);
-    Lcd_showStringEN(6, 0 * 8, "BMS Cycles:         0", 0);
+    Lcd_showStringEN(ROW_FIRST, 0 * 8, "   SOC    :        %", 0);
+    Lcd_showStringEN(ROW_SECOND, 0 * 8, "Nominal   :        AH", 0);
+    Lcd_showStringEN(ROW_THREE, 0 * 8, "Remain    :        AH", 0);
+    Lcd_showStringEN(ROW_LAST, 0 * 8, "BMS Cycles:         0", 0);
 }
 
 //======================================================================
@@ -554,10 +633,10 @@ void Page_Capacity(void) {
 // Description:
 //======================================================================
 void Page_Warning_1(void) {
-    Lcd_showStringEN(0, 0 * 8, "--Over Volt :   ", 0);
-    Lcd_showStringEN(2, 0 * 8, "--Low Volt  :   ", 0);
-    Lcd_showStringEN(4, 0 * 8, "--Over Temp :   ", 0);
-    Lcd_showStringEN(6, 0 * 8, "--Low Temp  :   ", 0);
+    Lcd_showStringEN(ROW_FIRST, 0 * 8, "--Over Volt :   ", 0);
+    Lcd_showStringEN(ROW_SECOND, 0 * 8, "--Low Volt  :   ", 0);
+    Lcd_showStringEN(ROW_THREE, 0 * 8, "--Over Temp :   ", 0);
+    Lcd_showStringEN(ROW_LAST, 0 * 8, "--Low Temp  :   ", 0);
 }
 
 //======================================================================
@@ -565,10 +644,10 @@ void Page_Warning_1(void) {
 // Description:
 //======================================================================
 void Page_Warning_2(void) {
-    Lcd_showStringEN(0, 0 * 8, "--Low SOC   :   ", 0);
-    Lcd_showStringEN(2, 0 * 8, "--Diff Volt :   ", 0);
-    Lcd_showStringEN(4, 0 * 8, "--Over Curr :   ", 0);
-    Lcd_showStringEN(6, 0 * 8, "--Reverse   :   ", 0);
+    Lcd_showStringEN(ROW_FIRST, 0 * 8, "--Low SOC   :   ", 0);
+    Lcd_showStringEN(ROW_SECOND, 0 * 8, "--Diff Volt :   ", 0);
+    Lcd_showStringEN(ROW_THREE, 0 * 8, "--Over Curr :   ", 0);
+    Lcd_showStringEN(ROW_LAST, 0 * 8, "--Reverse   :   ", 0);
 }
 
 //======================================================================
@@ -576,10 +655,10 @@ void Page_Warning_2(void) {
 // Description:
 //======================================================================
 void Page_Protection_1(void) {
-    Lcd_showStringEN(0, 0 * 8, "--Over Volt :   ", 0);
-    Lcd_showStringEN(2, 0 * 8, "--Low Volt  :   ", 0);
-    Lcd_showStringEN(4, 0 * 8, "--Over Temp :   ", 0);
-    Lcd_showStringEN(6, 0 * 8, "--Low Temp  :   ", 0);
+    Lcd_showStringEN(ROW_FIRST, 0 * 8, "--Over Volt :   ", 0);
+    Lcd_showStringEN(ROW_SECOND, 0 * 8, "--Low Volt  :   ", 0);
+    Lcd_showStringEN(ROW_THREE, 0 * 8, "--Over Temp :   ", 0);
+    Lcd_showStringEN(ROW_LAST, 0 * 8, "--Low Temp  :   ", 0);
 }
 
 //======================================================================
@@ -587,8 +666,8 @@ void Page_Protection_1(void) {
 // Description:
 //======================================================================
 void Page_Protection_2(void) {
-    Lcd_showStringEN(0, 0 * 8, "--Over Curr :   ", 0);
-    Lcd_showStringEN(2, 0 * 8, "--Short Curr:   ", 0);
+    Lcd_showStringEN(ROW_FIRST, 0 * 8, "--Over Curr :   ", 0);
+    Lcd_showStringEN(ROW_SECOND, 0 * 8, "--Short Curr:   ", 0);
 }
 
 /*******************************************************************************
@@ -596,10 +675,10 @@ void Page_Protection_2(void) {
  * Description: show the Fail Alarm info in 3 pages
  *******************************************************************************/
 void Page_FailAlarm_1(void) {
-    Lcd_showStringEN(0, 0 * 8, "--Sample Line:  ", 0);
-    Lcd_showStringEN(2, 0 * 8, "--Charge MOS :  ", 0);
-    Lcd_showStringEN(4, 0 * 8, "--DisCHG MOS :  ", 0);
-    Lcd_showStringEN(6, 0 * 8, "--Sample Chip:  ", 0);
+    Lcd_showStringEN(ROW_FIRST, 0 * 8, "--Sample Line:  ", 0);
+    Lcd_showStringEN(ROW_SECOND, 0 * 8, "--Charge MOS :  ", 0);
+    Lcd_showStringEN(ROW_THREE, 0 * 8, "--DisCHG MOS :  ", 0);
+    Lcd_showStringEN(ROW_LAST, 0 * 8, "--Sample Chip:  ", 0);
 }
 
 /*******************************************************************************
@@ -607,10 +686,10 @@ void Page_FailAlarm_1(void) {
  * Description: show the Fail Alarm info in 3 pages
  *******************************************************************************/
 void Page_FailAlarm_2(void) {
-    Lcd_showStringEN(0, 0 * 8, "SC Times   :    ", 0);
-    Lcd_showStringEN(2, 0 * 8, "OverTempCNT:    ", 0);
-    Lcd_showStringEN(4, 0 * 8, "OverCurrCNT:    ", 0);
-    Lcd_showStringEN(6, 0 * 8, "OverChgCNT :    ", 0);
+    Lcd_showStringEN(ROW_FIRST, 0 * 8, "SC Times   :    ", 0);
+    Lcd_showStringEN(ROW_SECOND, 0 * 8, "OverTempCNT:    ", 0);
+    Lcd_showStringEN(ROW_THREE, 0 * 8, "OverCurrCNT:    ", 0);
+    Lcd_showStringEN(ROW_LAST, 0 * 8, "OverChgCNT :    ", 0);
 }
 
 /*******************************************************************************
@@ -641,7 +720,6 @@ void Page_BMS_Version(void) {
     memcpy(_buf, g_sm_info.Hardware_type, 10);
     Lcd_showStringEN(2, 4 * 8, _buf, 0);
 
-
     memset(_buf, 0, 10);
     memcpy(_buf, g_sm_info.Product_code, 10);
     Lcd_showStringEN(6, 0 * 8, _buf, 0);
@@ -650,18 +728,16 @@ void Page_BMS_Version(void) {
     memcpy(_buf, g_sm_info.Project_code, 10);
     Lcd_showStringEN(6, 10 * 8, _buf, 0);
 
-
-
     j = 2;
     while ('-' != BMS_Version[j]) {
-    j++;
-    if (j > 29) //规定长度
-        return;
+        j++;
+        if (j > 29) // 规定长度
+            return;
     }
     j++;
     for (i = 0; i < 8; i++) {
-    if ('^' == BMS_Version[i + j]) break;
-    Lcd_showChar6_8(2, (i + 9) * 8, BMS_Version[i + j], 0);
+        if ('^' == BMS_Version[i + j]) break;
+        Lcd_showChar6_8(2, (i + 9) * 8, BMS_Version[i + j], 0);
     }
 }
 
@@ -671,13 +747,13 @@ void Page_BMS_Version(void) {
  * KS-V2.0.2:满充容量
  * KS-V2.0.4:剩余容量
  * KS-V2.1.1:更改首页电流显示三位后面不清空问题,剩余容量
- * KS-V2.1.2:更改首页电流显示三位后面不清空问题,满充容量
+ * KS-V2.1.3:更改首页电流显示三位后面不清空问题,满充容量,增加协议选择
  *******************************************************************************/
 void Page_LCD_Version(void) {
-    Lcd_showStringEN(0, 0 * 8, "LCD SW Version: ", 0);//主板协议回复不在判断cid1
-    Lcd_showStringEN(2, 0 * 8, " KS-V2.1.2", 0);
-    Lcd_showStringEN(4, 0 * 8, "LCD HW Version: ", 0);
-    Lcd_showStringEN(6, 0 * 8, " KS-LCD-02-V1", 0);
+    Lcd_showStringEN(ROW_FIRST, 0 * 8, "LCD SW Version: ", 0); // 主板协议回复不在判断cid1
+    Lcd_showStringEN(ROW_SECOND, 0 * 8, " KS-V2.1.3", 0);
+    Lcd_showStringEN(ROW_THREE, 0 * 8, "LCD HW Version: ", 0);
+    Lcd_showStringEN(ROW_LAST, 0 * 8, " KS-LCD-02-V1", 0);
 }
 
 /*******************************************************************************
@@ -686,128 +762,940 @@ void Page_LCD_Version(void) {
  *******************************************************************************/
 void GyroSet(void) {
     static uint8_t ParaSetFlag = 0;
-    static uint8_t PlaceFlag = 0;
-    static uint8_t X_axisFlag = 0;
-
-    if (0 == ParaSetFlag) //菜单切换
-    {
+    static uint8_t PlaceFlag   = 0;
+    static uint8_t X_axisFlag  = 0;
+    // 菜单切换
+    if (0 == ParaSetFlag) {
         if ((Key_Value & BIT2)) {
-            if (SelectCH_Line_Index == 0) { SelectCH_Line_Index = 2; }
+            if (SelectCH_Line_Index == 0) {
+                SelectCH_Line_Index = 2;
+            }
             SelectCH_Line_Index--;
             Show_SelectCh(SelectCH_Line_Index);
         } else if ((Key_Value & BIT3)) {
-            if (++SelectCH_Line_Index >= 2) { SelectCH_Line_Index = 0; }
+            if (++SelectCH_Line_Index >= 2) {
+                SelectCH_Line_Index = 0;
+            }
             Show_SelectCh(SelectCH_Line_Index);
         }
     }
     /*陀螺仪设置说明*/
     /*else if(1 == ParaSetFlag)       //陀螺仪上下按键设置方向
-          {
-              if((Key_Value & BIT2) || (Key_Value & BIT3))
-              {
-                  if(0 == PlaceFlag)
-                  {
-                      PlaceFlag = 1;
-                      Lcd_showStringEN(4, 6 * 8, "Horizontal", 1);
-                  }
-                  else if(1 == PlaceFlag)
-                  {
-                      PlaceFlag = 0;
-                      Lcd_showStringEN(4, 6 * 8, "Vertical  ", 1);
-                  }
-              }
-          }
-          else if(2 == ParaSetFlag)       //陀螺仪上下按键设置X,Y
-          {
-              if((Key_Value & BIT2) || (Key_Value & BIT3))
-              {
-                  if(0 == X_axisFlag)
-                  {
-                      X_axisFlag = 1;
-                      Lcd_showStringEN(0, 13*8, "180", 1);
-                  }
-                  else if(1 == X_axisFlag)
-                  {
-                      X_axisFlag = 0;
-                      Lcd_showStringEN(0, 13*8, "  0", 1);
-                  }
-              }
-          }*/
+        {
+            if((Key_Value & BIT2) || (Key_Value & BIT3))
+            {
+                if(0 == PlaceFlag)
+                {
+                    PlaceFlag = 1;
+                    Lcd_showStringEN(4, 6 * 8, "Horizontal", 1);
+                }
+                else if(1 == PlaceFlag)
+                {
+                    PlaceFlag = 0;
+                    Lcd_showStringEN(4, 6 * 8, "Vertical  ", 1);
+                }
+            }
+        }
+        else if(2 == ParaSetFlag)       //陀螺仪上下按键设置X,Y
+        {
+            if((Key_Value & BIT2) || (Key_Value & BIT3))
+            {
+                if(0 == X_axisFlag)
+                {
+                    X_axisFlag = 1;
+                    Lcd_showStringEN(0, 13*8, "180", 1);
+                }
+                else if(1 == X_axisFlag)
+                {
+                    X_axisFlag = 0;
+                    Lcd_showStringEN(0, 13*8, "  0", 1);
+                }
+            }
+        }*/
 
     if ((Key_Value & BIT4)) {
         if (ParaSetFlag) {
-            ParaSetFlag = 0; //返回页面初始值
+            ParaSetFlag = 0; // 返回页面初始值
         } else {
-            New_Page_Status = PAGE_MENU; //回主菜单
+            New_Page_Status     = PAGE_MENU_1; // 回主菜单
             SelectCH_Line_Index = 2;
         }
     }
     /*陀螺仪设置说明*/
     /*else if((Key_Value & BIT1))
-              {
+            {
 
-                  ParaSetFlag = 0;
+                ParaSetFlag = 0;
 
 
-                  if(0 == SelectCH_Line_Index)
-                  {
-                      if(0 == ParaSetFlag)
-                      {
-                          ParaSetFlag = 2;
-                        //  X_axisFlag = 2;
-                          X_axisFlag = X_axisFlag_COM;
-                      }
-                      else if(2 == ParaSetFlag)
-                      {
-                          SetCommondFlag = 1;   //Uart_SetParaCMD_1(X_axisFlag);  //发送X轴指令
-                          ParaSetFlag = 0;
-                          X_axisFlag_COM = X_axisFlag;
-                      }
-                      if(1 == X_axisFlag)
-                      {
-                          Lcd_showStringEN(0, 13*8, "180", 0);
-                      }
-                      else if(0 == X_axisFlag)
-                      {
-                          Lcd_showStringEN(0, 13*8, "  0", 0);
-                      }
-                  }
+                if(0 == SelectCH_Line_Index)
+                {
+                    if(0 == ParaSetFlag)
+                    {
+                        ParaSetFlag = 2;
+                      //  X_axisFlag = 2;
+                        X_axisFlag = X_axisFlag_COM;
+                    }
+                    else if(2 == ParaSetFlag)
+                    {
+                        SetCommondFlag = 1;   //Uart_SetParaCMD_1(X_axisFlag);
+     //发送X轴指令 ParaSetFlag = 0; X_axisFlag_COM = X_axisFlag;
+                    }
+                    if(1 == X_axisFlag)
+                    {
+                        Lcd_showStringEN(0, 13*8, "180", 0);
+                    }
+                    else if(0 == X_axisFlag)
+                    {
+                        Lcd_showStringEN(0, 13*8, "  0", 0);
+                    }
+                }
 
-                  if(1 == SelectCH_Line_Index)
-                  {
-                      if(0 == ParaSetFlag)
-                      {
-                          ParaSetFlag = 1;
-                       //   PlaceFlag = 2;
-                          PlaceFlag = PlaceFlag_COM;
-                      }
-                      else if(1 == ParaSetFlag)
-                      {
-                          SetCommondFlag = 2;   //Uart_SetParaCMD_2(PlaceFlag); //陀螺仪垂直、水平指令
-                          ParaSetFlag = 0; PlaceFlag_COM = PlaceFlag;
-                      }
-                      if(1 == PlaceFlag)
-                      {
-                          Lcd_showStringEN(4, 6 * 8, "Horizontal", 0);
-                      }
-                      else if(0 == PlaceFlag)
-                      {
-                          Lcd_showStringEN(4, 6 * 8, "Vertical  ", 0);
-                      }
-                  }
+                if(1 == SelectCH_Line_Index)
+                {
+                    if(0 == ParaSetFlag)
+                    {
+                        ParaSetFlag = 1;
+                     //   PlaceFlag = 2;
+                        PlaceFlag = PlaceFlag_COM;
+                    }
+                    else if(1 == ParaSetFlag)
+                    {
+                        SetCommondFlag = 2;   //Uart_SetParaCMD_2(PlaceFlag);
+     //陀螺仪垂直、水平指令 ParaSetFlag = 0; PlaceFlag_COM = PlaceFlag;
+                    }
+                    if(1 == PlaceFlag)
+                    {
+                        Lcd_showStringEN(4, 6 * 8, "Horizontal", 0);
+                    }
+                    else if(0 == PlaceFlag)
+                    {
+                        Lcd_showStringEN(4, 6 * 8, "Vertical  ", 0);
+                    }
+                }
 
-              }*/
+            }*/
+}
+#if PROTOCOL_EN_ALL == 1
+/*******************************************************************************
+ * Function:	page_can_protocol_1()
+ * Description: show the Can Protocol info in 1 pages
+ *******************************************************************************/
+void page_can_protocol_1(void) {
+    Show_SelectCh(SelectCH_Line_Index);
+    Lcd_showStringEN(ROW_FIRST, 2 * 8, "CAN Victon      ", 0);
+    Lcd_showStringEN(ROW_SECOND, 2 * 8, "CAN Pylon       ", 0);
+    Lcd_showStringEN(ROW_THREE, 2 * 8, "CAN Goodwe      ", 0);
+    Lcd_showStringEN(ROW_LAST, 2 * 8, "CAN Growatt     ", 0);
+}
+
+/*******************************************************************************
+ * Function:	page_can_protocol_2()
+ * Description: show the Can Protocol info in 2 pages
+ *******************************************************************************/
+void page_can_protocol_2(void) {
+    Show_SelectCh(SelectCH_Line_Index);
+    Lcd_showStringEN(ROW_FIRST, 2 * 8, "CAN Voltronic   ", 0);
+    Lcd_showStringEN(ROW_SECOND, 2 * 8, "CAN LXP         ", 0);
+    Lcd_showStringEN(ROW_THREE, 2 * 8, "CAN Deye        ", 0);
+    Lcd_showStringEN(ROW_LAST, 2 * 8, "CAN Sofar       ", 0);
+}
+
+/*******************************************************************************
+ * Function:	page_can_protocol_3()
+ * Description: show the Can Protocol info in 3 pages
+ *******************************************************************************/
+void page_can_protocol_3(void) {
+    Show_SelectCh(SelectCH_Line_Index);
+    Lcd_showStringEN(ROW_FIRST, 2 * 8, "CAN Solis       ", 0);
+    Lcd_showStringEN(ROW_SECOND, 2 * 8, "CAN SunGrow     ", 0);
+    Lcd_showStringEN(ROW_THREE, 2 * 8, "CAN Studer      ", 0);
+    Lcd_showStringEN(ROW_LAST, 2 * 8, "CAN Huawei      ", 0);
+}
+
+/*******************************************************************************
+ * Function:	page_can_protocol_4()
+ * Description: show the Can Protocol info in 4 pages
+ *******************************************************************************/
+void page_can_protocol_4(void) {
+    Show_SelectCh(SelectCH_Line_Index);
+    Lcd_showStringEN(ROW_FIRST, 2 * 8, "CAN SMA         ", 0);
+    Lcd_showStringEN(ROW_SECOND, 2 * 8, "CAN INVT        ", 0);
+    Lcd_showStringEN(ROW_THREE, 2 * 8, "CAN Kstar       ", 0);
+    Lcd_showStringEN(ROW_LAST, 2 * 8, "CAN MUST        ", 0);
+}
+
+/*******************************************************************************
+ * Function:	page_can_protocol_5()
+ * Description: show the Can Protocol info in 5 pages
+ *******************************************************************************/
+void page_can_protocol_5(void) {
+    Show_SelectCh(SelectCH_Line_Index);
+    Lcd_showStringEN(ROW_FIRST, 2 * 8, "CAN SRNE        ", 0);
+    Lcd_showStringEN(ROW_SECOND, 2 * 8, "CAN FoxEss      ", 0);
+    Lcd_showStringEN(ROW_THREE, 2 * 8, "CAN BST         ", 0);
+    Lcd_showStringEN(ROW_LAST, 2 * 8, "CAN AISWEI      ", 0);
+}
+
+/*******************************************************************************
+ * Function:	page_can_protocol_6()
+ * Description: show the Can Protocol info in 6 pages
+ *******************************************************************************/
+void page_can_protocol_6(void) {
+    Show_SelectCh(SelectCH_Line_Index);
+    Lcd_showStringEN(ROW_FIRST, 2 * 8, "CAN Schneider   ", 0);
+}
+
+/*******************************************************************************
+ * Function:	page_rs485_protocol_1()
+ * Description: show the RS485 Protocol info in 1 pages
+ *******************************************************************************/
+void page_rs485_protocol_1(void) {
+    Show_SelectCh(SelectCH_Line_Index);
+    Lcd_showStringEN(ROW_FIRST, 2 * 8, "RS485 Pylon     ", 0);
+    Lcd_showStringEN(ROW_SECOND, 2 * 8, "RS485 SMK Solar ", 0);
+    Lcd_showStringEN(ROW_THREE, 2 * 8, "RS485 Voltronic ", 0);
+    Lcd_showStringEN(ROW_LAST, 2 * 8, "RS485 Growatt   ", 0);
+}
+
+/*******************************************************************************
+ * Function:	page_rs485_protocol_2()
+ * Description: show the RS485 Protocol info in 2 pages
+ *******************************************************************************/
+void page_rs485_protocol_2(void) {
+    Show_SelectCh(SelectCH_Line_Index);
+    Lcd_showStringEN(ROW_FIRST, 2 * 8, "RS485 SRNE      ", 0);
+    Lcd_showStringEN(ROW_SECOND, 2 * 8, "RS485 GP        ", 0);
+    Lcd_showStringEN(ROW_THREE, 2 * 8, "RS485 HengRui   ", 0);
+    Lcd_showStringEN(ROW_LAST, 2 * 8, "RS485 Wolong    ", 0);
+}
+
+/*******************************************************************************
+ * Function:	page_rs485_protocol_3()
+ * Description: show the RS485 Protocol info in 3 pages
+ *******************************************************************************/
+void page_rs485_protocol_3(void) {
+    Show_SelectCh(SelectCH_Line_Index);
+    Lcd_showStringEN(ROW_FIRST, 2 * 8, "RS485 SacredSun ", 0);
+    Lcd_showStringEN(ROW_SECOND, 2 * 8, "RS485 LI BAT    ", 0);
+    Lcd_showStringEN(ROW_THREE, 2 * 8, "RS485 LingYu    ", 0);
+    Lcd_showStringEN(ROW_LAST, 2 * 8, "RS485 ELTEK     ", 0);
+}
+
+/*******************************************************************************
+ * Function:	page_rs485_protocol_4()
+ * Description: show the RS485 Protocol info in 4 pages
+ *******************************************************************************/
+void page_rs485_protocol_4(void) {
+    Show_SelectCh(SelectCH_Line_Index);
+    Lcd_showStringEN(ROW_FIRST, 2 * 8, "RS485 Huawei    ", 0);
+    Lcd_showStringEN(ROW_SECOND, 2 * 8, "RS485 VIRTIV    ", 0);
+}
+#else
+/*******************************************************************************
+ * Function:	page_can_protocol_1()
+ * Description: show the Can Protocol info in 1 pages
+ *******************************************************************************/
+void page_can_protocol_1(void) {
+    Show_SelectCh(SelectCH_Line_Index);
+    Lcd_showStringEN(ROW_FIRST, 2 * 8, "CAN Victon      ", 0);
+    Lcd_showStringEN(ROW_SECOND, 2 * 8, "CAN Pylon       ", 0);
+    Lcd_showStringEN(ROW_THREE, 2 * 8, "CAN Growatt     ", 0);
+    Lcd_showStringEN(ROW_LAST, 2 * 8, "CAN LXP         ", 0);
+}
+
+/*******************************************************************************
+ * Function:	page_can_protocol_2()
+ * Description: show the Can Protocol info in 2 pages
+ *******************************************************************************/
+void page_can_protocol_2(void) {
+    Show_SelectCh(SelectCH_Line_Index);
+    Lcd_showStringEN(ROW_FIRST, 2 * 8, "CAN Deye        ", 0);
+    Lcd_showStringEN(ROW_SECOND, 2 * 8, "CAN Sofar       ", 0);
+    Lcd_showStringEN(ROW_THREE, 2 * 8, "CAN Solis       ", 0);
+    Lcd_showStringEN(ROW_LAST, 2 * 8, "CAN SMA        ", 0);
+}
+
+/*******************************************************************************
+ * Function:	page_can_protocol_3()
+ * Description: show the Can Protocol info in 3 pages
+ *******************************************************************************/
+void page_can_protocol_3(void) {
+    Show_SelectCh(SelectCH_Line_Index);
+    Lcd_showStringEN(ROW_FIRST, 2 * 8, "CAN MUST       ", 0);
+    Lcd_showStringEN(ROW_SECOND, 2 * 8, "CAN AISWEI     ", 0);
+}
+/*******************************************************************************
+ * Function:	page_rs485_protocol_1()
+ * Description: show the RS485 Protocol info in 1 pages
+ *******************************************************************************/
+void page_rs485_protocol_1(void) {
+    Show_SelectCh(SelectCH_Line_Index);
+    Lcd_showStringEN(ROW_FIRST, 2 * 8, "RS485 Pylon     ", 0);
+    Lcd_showStringEN(ROW_SECOND, 2 * 8, "RS485 SRNE      ", 0);
+    Lcd_showStringEN(ROW_THREE, 2 * 8, "RS485 Voltronic ", 0);
+    Lcd_showStringEN(ROW_LAST, 2 * 8, "RS485 Growatt   ", 0);
+}
+
+#endif
+void choose_clear() {
+    Lcd_showChar6_8(ROW_FIRST, 15 * 8, ' ', 0);
+    Lcd_showChar6_8(ROW_SECOND, 15 * 8, ' ', 0);
+    Lcd_showChar6_8(ROW_THREE, 15 * 8, ' ', 0);
+    Lcd_showChar6_8(ROW_LAST, 15 * 8, ' ', 0);
+}
+
+void choose_row(uint8_t index, uint8_t row_addr) {
+    for (int i = 0; i < PROTOCOL_ARR_LENGTH; ++i) {
+        if (protocol_arr[i].protocol_page == index && protocol_arr[i].protocol_row == (row_addr * 2)) {
+            if (protocol_arr[i].index > E_CAN_MAX_NUM) {
+                page_protocol_t.rs485_protocol = protocol_arr[i].index;
+            } else {
+                page_protocol_t.can_protocol = protocol_arr[i].index;
+            }
+        }
+    }
+    D_BMS_SET_OPTION_PARAM_T *bms_set_opt_t = bms_get_set_opt_info();
+    bms_set_opt_t->page                     = Old_Page_Status;
+    bms_set_opt_t->is_finished              = false;
+    bms_set_opt_t->is_option                = true;
+    switch (row_addr) {
+        case 0:
+            Lcd_showChar6_8(ROW_FIRST, 15 * 8 - 3, '^', 0);
+            Lcd_showChar6_8(ROW_SECOND, 15 * 8 - 3, ' ', 0);
+            Lcd_showChar6_8(ROW_THREE, 15 * 8 - 3, ' ', 0);
+            Lcd_showChar6_8(ROW_LAST, 15 * 8 - 3, ' ', 0);
+            break;
+        case 1:
+            Lcd_showChar6_8(ROW_FIRST, 15 * 8 - 3, ' ', 0);
+            Lcd_showChar6_8(ROW_SECOND, 15 * 8 - 3, '^', 0);
+            Lcd_showChar6_8(ROW_THREE, 15 * 8 - 3, ' ', 0);
+            Lcd_showChar6_8(ROW_LAST, 15 * 8 - 3, ' ', 0);
+            break;
+        case 2:
+            Lcd_showChar6_8(ROW_FIRST, 15 * 8 - 3, ' ', 0);
+            Lcd_showChar6_8(ROW_SECOND, 15 * 8 - 3, ' ', 0);
+            Lcd_showChar6_8(ROW_THREE, 15 * 8 - 3, '^', 0);
+            Lcd_showChar6_8(ROW_LAST, 15 * 8 - 3, ' ', 0);
+            break;
+        case 3:
+            Lcd_showChar6_8(ROW_FIRST, 15 * 8 - 3, ' ', 0);
+            Lcd_showChar6_8(ROW_SECOND, 15 * 8 - 3, ' ', 0);
+            Lcd_showChar6_8(ROW_THREE, 15 * 8 - 3, ' ', 0);
+            Lcd_showChar6_8(ROW_LAST, 15 * 8 - 3, '^', 0);
+            break;
+        default: break;
+    }
+}
+
+void press_menu_key(void) {
+    switch (Old_Page_Status) {
+        case PAGE_WELCOME: //新增按键操作，数据更新
+        case PAGE_MENU_1:
+        case PAGE_MENU_2:
+        case PAGE_ANALOG_1:
+        // case PAGE_ANALOG_2:
+        case PAGE_STATUS:
+        case PAGE_PARASET:
+        case PAGE_SYSTEMSET:
+        case PAGE_TEMPERATURE_1:
+        // case PAGE_TEMPERATURE_2: //8路NTC
+        case PAGE_TEMPERATURE_3:
+        case PAGE_VOLTAGE_1:
+        case PAGE_VOLTAGE_2:
+        case PAGE_VOLTAGE_3:
+        case PAGE_VOLTAGE_4:
+        case PAGE_CAPACITY:
+        case PAGE_WARNING_1:
+        case PAGE_WARNING_2:
+        case PAGE_PROTECTION_1:
+        case PAGE_PROTECTION_2:
+        // case PAGE_PROTECTION_3:
+        case PAGE_FAILALARM_1:
+        case PAGE_FAILALARM_2:
+        case PAGE_FAILALARM_3:
+        case PAGE_BMS_VERSION:
+        case PAGE_LCD_VERSION:
+            New_Page_Status = PAGE_MENU_1;
+            if (Old_Page_Status != PAGE_MENU_1) {
+                SelectCH_Line_Index = 0;
+            }
+            break;
+        case PAGE_CAN_PAGE_1:
+        case PAGE_CAN_PAGE_2:
+        case PAGE_CAN_PAGE_3:
+        case PAGE_CAN_PAGE_4:
+        case PAGE_CAN_PAGE_5:
+        case PAGE_CAN_PAGE_6:
+            New_Page_Status     = PAGE_MENU_2;
+            SelectCH_Line_Index = 0;
+            break;
+        case PAGE_RS485_PAGE_1:
+        case PAGE_RS485_PAGE_2:
+        case PAGE_RS485_PAGE_3:
+        case PAGE_RS485_PAGE_4:
+            New_Page_Status     = PAGE_MENU_2;
+            SelectCH_Line_Index = 1;
+            break;
+        default: New_Page_Status = PAGE_MENU_1; break;
+    }
+}
+
+void press_ok_key(void) {
+    switch (Old_Page_Status) {
+        case PAGE_WELCOME: //新增按键操作，数据更新
+            break;
+        case PAGE_MENU_1:
+            if (SelectCH_Line_Index == 0) {
+                New_Page_Status = PAGE_ANALOG_1;
+            } else if (SelectCH_Line_Index == 1) {
+                New_Page_Status = PAGE_STATUS;
+            } else if (SelectCH_Line_Index == 2) {
+                New_Page_Status = PAGE_PARASET;
+                SetCommondFlag  = 3;
+                Uart_GetParaCMD_1(); // 读X轴指令
+                Delay_ms(10);
+                Uart_GetParaCMD_2(); // 读水平、垂直指令
+                Delay_ms(10);
+                if (1 == X_axisFlag_COM) {
+                    Lcd_showStringEN(0, 13 * 8, "180", 0);
+                } else if (0 == X_axisFlag_COM) {
+                    Lcd_showStringEN(0, 13 * 8, "  0", 0);
+                }
+
+                if (1 == PlaceFlag_COM) {
+                    Lcd_showStringEN(4, 6 * 8, "Horizontal", 0);
+                } else if (0 == PlaceFlag_COM) {
+                    Lcd_showStringEN(4, 6 * 8, "Vertical  ", 0);
+                }
+            } else {
+                New_Page_Status = PAGE_SYSTEMSET;
+            }
+
+            SelectCH_Line_Index = 0;
+            break;
+        case PAGE_MENU_2:
+            if (SelectCH_Line_Index == 0) {
+                New_Page_Status = PAGE_CAN_PAGE_1;
+            } else if (SelectCH_Line_Index == 1) {
+                New_Page_Status = PAGE_RS485_PAGE_1;
+            }
+            SelectCH_Line_Index = 0;
+            break;
+        case PAGE_ANALOG_1:
+            if (SelectCH_Line_Index == 2) {
+                New_Page_Status     = PAGE_TEMPERATURE_1;
+                SelectCH_Line_Index = 0;
+            } else if (SelectCH_Line_Index == 3) {
+                New_Page_Status     = PAGE_VOLTAGE_1;
+                SelectCH_Line_Index = 0;
+            }
+            break;
+        // case PAGE_ANALOG_2:
+        case PAGE_STATUS:
+            if (SelectCH_Line_Index == 1) {
+                New_Page_Status     = PAGE_WARNING_1;
+                SelectCH_Line_Index = 0;
+            } else if (SelectCH_Line_Index == 2) {
+                New_Page_Status     = PAGE_PROTECTION_1;
+                SelectCH_Line_Index = 0;
+            } else if (SelectCH_Line_Index == 3) {
+                New_Page_Status     = PAGE_FAILALARM_1;
+                SelectCH_Line_Index = 0;
+            }
+            break;
+        case PAGE_PARASET: GyroSet(); break;
+        case PAGE_SYSTEMSET:
+            if (SelectCH_Line_Index == 0) {
+                New_Page_Status = PAGE_BMS_VERSION;
+            } else if (SelectCH_Line_Index == 1) {
+                New_Page_Status = PAGE_LCD_VERSION;
+            }
+            SelectCH_Line_Index = 0;
+            break;
+        case PAGE_TEMPERATURE_1: break;
+        // case PAGE_TEMPERATURE_2: break; //8路NTC
+        case PAGE_TEMPERATURE_3: break;
+        case PAGE_VOLTAGE_1: break;
+        case PAGE_VOLTAGE_2: break;
+        case PAGE_VOLTAGE_3: break;
+        case PAGE_VOLTAGE_4: break;
+        case PAGE_CAPACITY: break;
+        case PAGE_WARNING_1: break;
+        case PAGE_WARNING_2: break;
+        case PAGE_PROTECTION_1: break;
+        case PAGE_PROTECTION_2: break;
+        // case PAGE_PROTECTION_3: break;
+        case PAGE_FAILALARM_1: break;
+        case PAGE_FAILALARM_2: break;
+        case PAGE_FAILALARM_3: break;
+        case PAGE_BMS_VERSION: break;
+        case PAGE_LCD_VERSION: break;
+        case PAGE_CAN_PAGE_1:
+        case PAGE_CAN_PAGE_2:
+        case PAGE_CAN_PAGE_3:
+        case PAGE_CAN_PAGE_4:
+        case PAGE_CAN_PAGE_5:
+        case PAGE_CAN_PAGE_6:
+        case PAGE_RS485_PAGE_1:
+        case PAGE_RS485_PAGE_2:
+        case PAGE_RS485_PAGE_3:
+        case PAGE_RS485_PAGE_4: choose_row(Old_Page_Status, SelectCH_Line_Index); break;
+        default: New_Page_Status = PAGE_MENU_1; break;
+    }
+}
+
+void press_page_sub_key(void) {
+    switch (Old_Page_Status) {
+        case PAGE_WELCOME: break; //新增按键操作，数据更新
+        case PAGE_MENU_1:
+            if (SelectCH_Line_Index-- == 0) {
+                SelectCH_Line_Index = 3;
+                New_Page_Status     = PAGE_MENU_2;
+            }
+            Show_SelectCh(SelectCH_Line_Index);
+            break;
+        case PAGE_MENU_2:
+            if (SelectCH_Line_Index-- == 0) {
+                SelectCH_Line_Index = 1;
+                New_Page_Status     = PAGE_MENU_1;
+            }
+            Show_SelectCh(SelectCH_Line_Index);
+            break;
+        case PAGE_ANALOG_1:
+            if (SelectCH_Line_Index-- == 0) {
+                SelectCH_Line_Index = 3;
+            }
+            Show_SelectCh(SelectCH_Line_Index);
+            break;
+        // case PAGE_ANALOG_2: break;
+        case PAGE_STATUS:
+            if (SelectCH_Line_Index-- == 0) {
+                SelectCH_Line_Index = 3;
+            }
+            Show_SelectCh(SelectCH_Line_Index);
+            break;
+        case PAGE_PARASET: GyroSet(); break;
+        case PAGE_SYSTEMSET:
+            if (SelectCH_Line_Index-- == 0) {
+                SelectCH_Line_Index = 3;
+            }
+            Show_SelectCh(SelectCH_Line_Index);
+            break;
+        case PAGE_TEMPERATURE_1: New_Page_Status = PAGE_TEMPERATURE_3; break;
+        // case PAGE_TEMPERATURE_2: break; //8路NTC
+        case PAGE_TEMPERATURE_3:
+            if (PackData.TempNum > 6) {
+                New_Page_Status = PAGE_TEMPERATURE_3;
+            } else {
+                New_Page_Status = PAGE_TEMPERATURE_1;
+            }
+            break;
+        case PAGE_VOLTAGE_1: New_Page_Status = PAGE_CAPACITY; break;
+        case PAGE_VOLTAGE_2: New_Page_Status = PAGE_VOLTAGE_1; break;
+        case PAGE_VOLTAGE_3: New_Page_Status = PAGE_VOLTAGE_2; break;
+        case PAGE_VOLTAGE_4: New_Page_Status = PAGE_VOLTAGE_3; break;
+        case PAGE_CAPACITY: New_Page_Status = PAGE_VOLTAGE_4; break;
+        case PAGE_WARNING_1: New_Page_Status = PAGE_WARNING_2; break;
+        case PAGE_WARNING_2: New_Page_Status = PAGE_WARNING_1; break;
+        case PAGE_PROTECTION_1: New_Page_Status = PAGE_PROTECTION_2; break;
+        case PAGE_PROTECTION_2: New_Page_Status = PAGE_PROTECTION_1; break;
+        // case PAGE_PROTECTION_3: break;
+        case PAGE_FAILALARM_1: New_Page_Status = PAGE_FAILALARM_3; break;
+        case PAGE_FAILALARM_2: New_Page_Status = PAGE_FAILALARM_1; break;
+        case PAGE_FAILALARM_3: New_Page_Status = PAGE_FAILALARM_2; break;
+        case PAGE_BMS_VERSION: break;
+        case PAGE_LCD_VERSION: break;
+#if PROTOCOL_EN_ALL == 1
+        case PAGE_CAN_PAGE_1:
+            if (SelectCH_Line_Index-- == 0) {
+                SelectCH_Line_Index = 0;
+                New_Page_Status     = PAGE_CAN_PAGE_6;
+            }
+            Show_SelectCh(SelectCH_Line_Index);
+            break;
+        case PAGE_CAN_PAGE_2:
+            if (SelectCH_Line_Index-- == 0) {
+                SelectCH_Line_Index = 3;
+                New_Page_Status     = PAGE_CAN_PAGE_1;
+            }
+            Show_SelectCh(SelectCH_Line_Index);
+            break;
+        case PAGE_CAN_PAGE_3:
+            if (SelectCH_Line_Index-- == 0) {
+                SelectCH_Line_Index = 3;
+                New_Page_Status     = PAGE_CAN_PAGE_2;
+            }
+            Show_SelectCh(SelectCH_Line_Index);
+            break;
+        case PAGE_CAN_PAGE_4:
+            if (SelectCH_Line_Index-- == 0) {
+                SelectCH_Line_Index = 3;
+                New_Page_Status     = PAGE_CAN_PAGE_3;
+            }
+            Show_SelectCh(SelectCH_Line_Index);
+            break;
+        case PAGE_CAN_PAGE_5:
+            if (SelectCH_Line_Index-- == 0) {
+                SelectCH_Line_Index = 3;
+                New_Page_Status     = PAGE_CAN_PAGE_4;
+            }
+            Show_SelectCh(SelectCH_Line_Index);
+            break;
+        case PAGE_CAN_PAGE_6:
+            if (SelectCH_Line_Index-- == 0) {
+                SelectCH_Line_Index = 3;
+                New_Page_Status     = PAGE_CAN_PAGE_5;
+            }
+            Show_SelectCh(SelectCH_Line_Index);
+            break;
+        case PAGE_RS485_PAGE_1:
+            if (SelectCH_Line_Index-- == 0) {
+                SelectCH_Line_Index = 1;
+                New_Page_Status     = PAGE_RS485_PAGE_4;
+            }
+            Show_SelectCh(SelectCH_Line_Index);
+            break;
+        case PAGE_RS485_PAGE_2:
+            if (SelectCH_Line_Index-- == 0) {
+                SelectCH_Line_Index = 3;
+                New_Page_Status     = PAGE_RS485_PAGE_1;
+            }
+            Show_SelectCh(SelectCH_Line_Index);
+            break;
+        case PAGE_RS485_PAGE_3:
+            if (SelectCH_Line_Index-- == 0) {
+                SelectCH_Line_Index = 3;
+                New_Page_Status     = PAGE_RS485_PAGE_2;
+            }
+            Show_SelectCh(SelectCH_Line_Index);
+            break;
+        case PAGE_RS485_PAGE_4:
+            if (SelectCH_Line_Index-- == 0) {
+                SelectCH_Line_Index = 3;
+                New_Page_Status     = PAGE_RS485_PAGE_3;
+            }
+            Show_SelectCh(SelectCH_Line_Index);
+            break;
+#else
+        case PAGE_CAN_PAGE_1:
+            if (SelectCH_Line_Index-- == 0) {
+                SelectCH_Line_Index = 0;
+                New_Page_Status     = PAGE_CAN_PAGE_3;
+            }
+            Show_SelectCh(SelectCH_Line_Index);
+            break;
+        case PAGE_CAN_PAGE_2:
+            if (SelectCH_Line_Index-- == 0) {
+                SelectCH_Line_Index = 3;
+                New_Page_Status     = PAGE_CAN_PAGE_1;
+            }
+            Show_SelectCh(SelectCH_Line_Index);
+            break;
+        case PAGE_CAN_PAGE_3:
+            if (SelectCH_Line_Index-- == 0) {
+                SelectCH_Line_Index = 3;
+                New_Page_Status     = PAGE_CAN_PAGE_2;
+            }
+            Show_SelectCh(SelectCH_Line_Index);
+            break;
+        case PAGE_RS485_PAGE_1:
+            if (SelectCH_Line_Index-- == 0) {
+                SelectCH_Line_Index = 3;
+            }
+            Show_SelectCh(SelectCH_Line_Index);
+            break;
+#endif
+        default: break;
+    }
+}
+
+void press_page_add_key(void) {
+    switch (Old_Page_Status) {
+        case PAGE_WELCOME: break; //新增按键操作，数据更新
+        case PAGE_MENU_1:
+            if (++SelectCH_Line_Index >= 4) {
+                SelectCH_Line_Index = 0;
+                New_Page_Status     = PAGE_MENU_2;
+            }
+            Show_SelectCh(SelectCH_Line_Index);
+            break;
+        case PAGE_MENU_2:
+            if (++SelectCH_Line_Index >= 2) {
+                SelectCH_Line_Index = 0;
+                New_Page_Status     = PAGE_MENU_1;
+            }
+            Show_SelectCh(SelectCH_Line_Index);
+            break;
+        case PAGE_ANALOG_1:
+            if (SelectCH_Line_Index >= 3) {
+                SelectCH_Line_Index = 0;
+                Show_SelectCh(SelectCH_Line_Index);
+            } else {
+                SelectCH_Line_Index++;
+                Show_SelectCh(SelectCH_Line_Index);
+            }
+            break;
+        // case PAGE_ANALOG_2: break;
+        case PAGE_STATUS:
+            if (++SelectCH_Line_Index >= 4) {
+                SelectCH_Line_Index = 0;
+            }
+            Show_SelectCh(SelectCH_Line_Index);
+            break;
+        case PAGE_PARASET: GyroSet(); break;
+        case PAGE_SYSTEMSET:
+            if (++SelectCH_Line_Index >= 2) {
+                SelectCH_Line_Index = 0;
+            }
+            Show_SelectCh(SelectCH_Line_Index);
+            break;
+        case PAGE_TEMPERATURE_1:
+            if (PackData.TempNum > 6) {
+                New_Page_Status = PAGE_TEMPERATURE_3;
+            } else {
+                New_Page_Status = PAGE_TEMPERATURE_1;
+            }
+            break;
+        // case PAGE_TEMPERATURE_2: break; //8路NTC
+        case PAGE_TEMPERATURE_3: New_Page_Status = PAGE_TEMPERATURE_1; break;
+        case PAGE_VOLTAGE_1: New_Page_Status = PAGE_VOLTAGE_2; break;
+        case PAGE_VOLTAGE_2: New_Page_Status = PAGE_VOLTAGE_3; break;
+        case PAGE_VOLTAGE_3: New_Page_Status = PAGE_VOLTAGE_4; break;
+        case PAGE_VOLTAGE_4: New_Page_Status = PAGE_CAPACITY; break;
+        case PAGE_CAPACITY: New_Page_Status = PAGE_VOLTAGE_1; break;
+        case PAGE_WARNING_1: New_Page_Status = PAGE_WARNING_2; break;
+        case PAGE_WARNING_2: New_Page_Status = PAGE_WARNING_1; break;
+        case PAGE_PROTECTION_1: New_Page_Status = PAGE_PROTECTION_2; break;
+        case PAGE_PROTECTION_2: New_Page_Status = PAGE_PROTECTION_1; break;
+        // case PAGE_PROTECTION_3: break;
+        case PAGE_FAILALARM_1: New_Page_Status = PAGE_FAILALARM_2; break;
+        case PAGE_FAILALARM_2: New_Page_Status = PAGE_FAILALARM_3; break;
+        case PAGE_FAILALARM_3: New_Page_Status = PAGE_FAILALARM_1; break;
+        case PAGE_BMS_VERSION: break;
+        case PAGE_LCD_VERSION: break;
+#if PROTOCOL_EN_ALL == 1
+        case PAGE_CAN_PAGE_1:
+            if (++SelectCH_Line_Index >= 4) {
+                SelectCH_Line_Index = 0;
+                New_Page_Status     = PAGE_CAN_PAGE_2;
+                choose_clear();
+            }
+            Show_SelectCh(SelectCH_Line_Index);
+            break;
+        case PAGE_CAN_PAGE_2:
+            if (++SelectCH_Line_Index >= 4) {
+                SelectCH_Line_Index = 0;
+                New_Page_Status     = PAGE_CAN_PAGE_3;
+                choose_clear();
+            }
+            Show_SelectCh(SelectCH_Line_Index);
+            break;
+        case PAGE_CAN_PAGE_3:
+            if (++SelectCH_Line_Index >= 4) {
+                SelectCH_Line_Index = 0;
+                New_Page_Status     = PAGE_CAN_PAGE_4;
+                choose_clear();
+            }
+            Show_SelectCh(SelectCH_Line_Index);
+            break;
+        case PAGE_CAN_PAGE_4:
+            if (++SelectCH_Line_Index >= 4) {
+                SelectCH_Line_Index = 0;
+                New_Page_Status     = PAGE_CAN_PAGE_5;
+                choose_clear();
+            }
+            Show_SelectCh(SelectCH_Line_Index);
+            break;
+        case PAGE_CAN_PAGE_5:
+            if (++SelectCH_Line_Index >= 4) {
+                SelectCH_Line_Index = 0;
+                New_Page_Status     = PAGE_CAN_PAGE_6;
+                choose_clear();
+            }
+            Show_SelectCh(SelectCH_Line_Index);
+            break;
+        case PAGE_CAN_PAGE_6:
+            if (++SelectCH_Line_Index >= 1) {
+                SelectCH_Line_Index = 0;
+                New_Page_Status     = PAGE_CAN_PAGE_1;
+                choose_clear();
+            }
+            Show_SelectCh(SelectCH_Line_Index);
+            break;
+        case PAGE_RS485_PAGE_1:
+            if (++SelectCH_Line_Index >= 4) {
+                SelectCH_Line_Index = 0;
+                New_Page_Status     = PAGE_RS485_PAGE_2;
+                choose_clear();
+            }
+            Show_SelectCh(SelectCH_Line_Index);
+            break;
+        case PAGE_RS485_PAGE_2:
+            if (++SelectCH_Line_Index >= 4) {
+                SelectCH_Line_Index = 0;
+                New_Page_Status     = PAGE_RS485_PAGE_3;
+                choose_clear();
+            }
+            Show_SelectCh(SelectCH_Line_Index);
+            break;
+        case PAGE_RS485_PAGE_3:
+            if (++SelectCH_Line_Index >= 4) {
+                SelectCH_Line_Index = 0;
+                New_Page_Status     = PAGE_RS485_PAGE_4;
+                choose_clear();
+            }
+            Show_SelectCh(SelectCH_Line_Index);
+            break;
+        case PAGE_RS485_PAGE_4:
+            if (++SelectCH_Line_Index >= 2) {
+                SelectCH_Line_Index = 0;
+                New_Page_Status     = PAGE_RS485_PAGE_1;
+                choose_clear();
+            }
+            Show_SelectCh(SelectCH_Line_Index);
+            break;
+#else
+        case PAGE_CAN_PAGE_1:
+            if (++SelectCH_Line_Index >= 4) {
+                SelectCH_Line_Index = 0;
+                New_Page_Status     = PAGE_CAN_PAGE_2;
+                choose_clear();
+            }
+            Show_SelectCh(SelectCH_Line_Index);
+            break;
+        case PAGE_CAN_PAGE_2:
+            if (++SelectCH_Line_Index >= 4) {
+                SelectCH_Line_Index = 0;
+                New_Page_Status     = PAGE_CAN_PAGE_3;
+                choose_clear();
+            }
+            Show_SelectCh(SelectCH_Line_Index);
+            break;
+        case PAGE_CAN_PAGE_3:
+            if (++SelectCH_Line_Index >= 2) {
+                SelectCH_Line_Index = 0;
+                New_Page_Status     = PAGE_CAN_PAGE_1;
+                choose_clear();
+            }
+            Show_SelectCh(SelectCH_Line_Index);
+            break;
+        case PAGE_RS485_PAGE_1:
+            if (++SelectCH_Line_Index >= 4) {
+                SelectCH_Line_Index = 0;
+            }
+            Show_SelectCh(SelectCH_Line_Index);
+            break;
+#endif
+        default: break;
+    }
+}
+
+void press_esc_key(void) {
+    switch (Old_Page_Status) {
+        case PAGE_WELCOME: break; //新增按键操作，数据更新
+        case PAGE_MENU_1:
+        case PAGE_MENU_2:
+            // 按ESC回到首页面
+            Key_Flag        = 0;
+            New_Page_Status = PAGE_WELCOME;
+            break;
+        case PAGE_ANALOG_1:
+        case PAGE_ANALOG_2:
+        case PAGE_STATUS:
+            New_Page_Status     = PAGE_MENU_1;
+            SelectCH_Line_Index = 1;
+            break;
+        case PAGE_PARASET: GyroSet(); break;
+        case PAGE_SYSTEMSET:
+            New_Page_Status     = PAGE_MENU_1;
+            SelectCH_Line_Index = 3;
+            break;
+        case PAGE_TEMPERATURE_1:
+        case PAGE_TEMPERATURE_2:
+        case PAGE_TEMPERATURE_3:
+            New_Page_Status     = PAGE_ANALOG_1;
+            SelectCH_Line_Index = 2;
+            break;
+        case PAGE_VOLTAGE_1:
+        case PAGE_VOLTAGE_2:
+        case PAGE_VOLTAGE_3:
+        case PAGE_VOLTAGE_4:
+        case PAGE_CAPACITY:
+            New_Page_Status     = PAGE_ANALOG_1;
+            SelectCH_Line_Index = 3;
+            break;
+        case PAGE_WARNING_1:
+        case PAGE_WARNING_2:
+            New_Page_Status     = PAGE_STATUS;
+            SelectCH_Line_Index = 1;
+            break;
+        case PAGE_PROTECTION_1:
+        case PAGE_PROTECTION_2:
+        case PAGE_PROTECTION_3:
+            New_Page_Status     = PAGE_STATUS;
+            SelectCH_Line_Index = 2;
+            break;
+        case PAGE_FAILALARM_1:
+        case PAGE_FAILALARM_2:
+        case PAGE_FAILALARM_3:
+            New_Page_Status     = PAGE_STATUS;
+            SelectCH_Line_Index = 3;
+            break;
+        case PAGE_BMS_VERSION:
+        case PAGE_LCD_VERSION:
+            New_Page_Status     = PAGE_SYSTEMSET;
+            SelectCH_Line_Index = 0;
+            break;
+        case PAGE_CAN_PAGE_1:
+        case PAGE_CAN_PAGE_2:
+        case PAGE_CAN_PAGE_3:
+        case PAGE_CAN_PAGE_4:
+        case PAGE_CAN_PAGE_5:
+        case PAGE_CAN_PAGE_6:
+            New_Page_Status     = PAGE_MENU_2;
+            SelectCH_Line_Index = 0;
+            break;
+        case PAGE_RS485_PAGE_1:
+        case PAGE_RS485_PAGE_2:
+        case PAGE_RS485_PAGE_3:
+        case PAGE_RS485_PAGE_4:
+            New_Page_Status     = PAGE_MENU_2;
+            SelectCH_Line_Index = 1;
+            break;
+        default:
+            Key_Flag        = 0;
+            New_Page_Status = PAGE_WELCOME;
+            break;
+    }
+}
+
+void page_handler(void) {
+    if (!Key_Value) return;
+    if (Key_Value & BIT0) {
+        press_menu_key();
+    } else if (Key_Value & BIT1) {
+        press_ok_key();
+    } else if (Key_Value & BIT2) {
+        press_page_sub_key();
+    } else if (Key_Value & BIT3) {
+        press_page_add_key();
+    } else if (Key_Value & BIT4) {
+        press_esc_key();
+    }
 }
 
 //======================================================================
 // Function:	Page_Select_Ctrl()
 // Description:  页面的按键选择和控制
 //======================================================================
-void Page_Select_Ctrl(void) {
+/*void Page_Select_Ctrl(void) {
     if (!Key_Value) return;
     if ((Key_Value & BIT0)) {
         New_Page_Status = PAGE_MENU;
-        if (Old_Page_Status != PAGE_MENU) { SelectCH_Line_Index = 0; }
+        if (Old_Page_Status != PAGE_MENU) {
+            SelectCH_Line_Index = 0;
+        }
         return;
     }
 
@@ -820,7 +1708,7 @@ void Page_Select_Ctrl(void) {
                     New_Page_Status = PAGE_STATUS;
                 } else if (SelectCH_Line_Index == 2) {
                     New_Page_Status = PAGE_PARASET;
-                    SetCommondFlag = 3;
+                    SetCommondFlag  = 3;
                     Uart_GetParaCMD_1(); //读X轴指令
                     Delay_ms(10);
                     Uart_GetParaCMD_2(); //读水平、垂直指令
@@ -842,17 +1730,21 @@ void Page_Select_Ctrl(void) {
 
                 SelectCH_Line_Index = 0;
             } else if ((Key_Value & BIT2)) {
-                if (SelectCH_Line_Index == 0) { SelectCH_Line_Index = 4; }
+                if (SelectCH_Line_Index == 0) {
+                    SelectCH_Line_Index = 4;
+                }
                 SelectCH_Line_Index--;
                 Show_SelectCh(SelectCH_Line_Index);
             } else if ((Key_Value & BIT3)) {
-                if (++SelectCH_Line_Index >= 4) { SelectCH_Line_Index = 0; }
+                if (++SelectCH_Line_Index >= 4) {
+                    SelectCH_Line_Index = 0;
+                }
                 Show_SelectCh(SelectCH_Line_Index);
             }
 
             else if ((Key_Value & BIT4)) //按ESC回到首页面
             {
-                Key_Flag = 0;
+                Key_Flag        = 0;
                 New_Page_Status = PAGE_WELCOME;
             }
             break;
@@ -860,10 +1752,10 @@ void Page_Select_Ctrl(void) {
         case PAGE_ANALOG_1:
             if ((Key_Value & BIT1)) {
                 if (SelectCH_Line_Index == 2) {
-                    New_Page_Status = PAGE_TEMPERATURE_1;
+                    New_Page_Status     = PAGE_TEMPERATURE_1;
                     SelectCH_Line_Index = 0;
                 } else if (SelectCH_Line_Index == 3) {
-                    New_Page_Status = PAGE_VOLTAGE_1;
+                    New_Page_Status     = PAGE_VOLTAGE_1;
                     SelectCH_Line_Index = 0;
                 }
             } else if ((Key_Value & BIT2)) {
@@ -883,7 +1775,7 @@ void Page_Select_Ctrl(void) {
                     Show_SelectCh(SelectCH_Line_Index);
                 }
             } else if ((Key_Value & BIT4)) {
-                New_Page_Status = PAGE_MENU;
+                New_Page_Status     = PAGE_MENU;
                 SelectCH_Line_Index = 0;
             }
             break;
@@ -891,46 +1783,46 @@ void Page_Select_Ctrl(void) {
         case PAGE_STATUS:
             if ((Key_Value & BIT1)) {
                 if (SelectCH_Line_Index == 1) {
-                    New_Page_Status = PAGE_WARNING_1;
+                    New_Page_Status     = PAGE_WARNING_1;
                     SelectCH_Line_Index = 0;
                 } else if (SelectCH_Line_Index == 2) {
-                    New_Page_Status = PAGE_PROTECTION_1;
+                    New_Page_Status     = PAGE_PROTECTION_1;
                     SelectCH_Line_Index = 0;
                 } else if (SelectCH_Line_Index == 3) {
-                    New_Page_Status = PAGE_FAILALARM_1;
+                    New_Page_Status     = PAGE_FAILALARM_1;
                     SelectCH_Line_Index = 0;
                 }
             } else if ((Key_Value & BIT2)) {
-                if (SelectCH_Line_Index == 0) { SelectCH_Line_Index = 4; }
+                if (SelectCH_Line_Index == 0) {
+                    SelectCH_Line_Index = 4;
+                }
                 SelectCH_Line_Index--;
                 Show_SelectCh(SelectCH_Line_Index);
             } else if ((Key_Value & BIT3)) {
-                if (++SelectCH_Line_Index >= 4) { SelectCH_Line_Index = 0; }
+                if (++SelectCH_Line_Index >= 4) {
+                    SelectCH_Line_Index = 0;
+                }
                 Show_SelectCh(SelectCH_Line_Index);
             } else if ((Key_Value & BIT4)) {
-                New_Page_Status = PAGE_MENU;
+                New_Page_Status     = PAGE_MENU;
                 SelectCH_Line_Index = 1;
             }
             break;
-        case PAGE_PARASET:
-            GyroSet();
-            break; //陀螺仪设置参数
+        case PAGE_PARASET: GyroSet(); break; //陀螺仪设置参数
 
-            /*case PAGE_PARASET:
-        if((Key_Value & BIT4))
-        {
-            New_Page_Status = PAGE_MENU;
-            SelectCH_Line_Index = 2;
-        }
-        break;*/
+        // case PAGE_PARASET:
+        //     if ((Key_Value & BIT4)) {
+        //         New_Page_Status     = PAGE_MENU;
+        //         SelectCH_Line_Index = 2;
+        //     }
+        //     break;
 
-            /*case PAGE_SYSTEMSET:
-        if((Key_Value & BIT4))
-        {
-            New_Page_Status = PAGE_MENU;
-            SelectCH_Line_Index = 3;
-        }
-        break;*/
+        // case PAGE_SYSTEMSET:
+        //     if ((Key_Value & BIT4)) {
+        //         New_Page_Status     = PAGE_MENU;
+        //         SelectCH_Line_Index = 3;
+        //     }
+        //     break;
 
         case PAGE_TEMPERATURE_1: //温度菜单控制
             if ((Key_Value & BIT2)) {
@@ -942,7 +1834,7 @@ void Page_Select_Ctrl(void) {
                     New_Page_Status = PAGE_TEMPERATURE_1;
                 }
             } else if ((Key_Value & BIT4)) {
-                New_Page_Status = PAGE_ANALOG_1;
+                New_Page_Status     = PAGE_ANALOG_1;
                 SelectCH_Line_Index = 2;
             }
             break;
@@ -959,7 +1851,7 @@ void Page_Select_Ctrl(void) {
             } else if ((Key_Value & BIT3)) {
                 New_Page_Status = PAGE_TEMPERATURE_1;
             } else if ((Key_Value & BIT4)) {
-                New_Page_Status = PAGE_ANALOG_1;
+                New_Page_Status     = PAGE_ANALOG_1;
                 SelectCH_Line_Index = 2;
             }
             break;
@@ -970,7 +1862,7 @@ void Page_Select_Ctrl(void) {
             } else if ((Key_Value & BIT3)) {
                 New_Page_Status = PAGE_VOLTAGE_2;
             } else if ((Key_Value & BIT4)) {
-                New_Page_Status = PAGE_ANALOG_1;
+                New_Page_Status     = PAGE_ANALOG_1;
                 SelectCH_Line_Index = 3;
             }
             break;
@@ -981,7 +1873,7 @@ void Page_Select_Ctrl(void) {
             } else if ((Key_Value & BIT3)) {
                 New_Page_Status = PAGE_VOLTAGE_3;
             } else if ((Key_Value & BIT4)) {
-                New_Page_Status = PAGE_ANALOG_1;
+                New_Page_Status     = PAGE_ANALOG_1;
                 SelectCH_Line_Index = 3;
             }
             break;
@@ -992,7 +1884,7 @@ void Page_Select_Ctrl(void) {
             } else if ((Key_Value & BIT3)) {
                 New_Page_Status = PAGE_VOLTAGE_4;
             } else if ((Key_Value & BIT4)) {
-                New_Page_Status = PAGE_ANALOG_1;
+                New_Page_Status     = PAGE_ANALOG_1;
                 SelectCH_Line_Index = 3;
             }
             break;
@@ -1004,7 +1896,7 @@ void Page_Select_Ctrl(void) {
                 //  New_Page_Status = PAGE_VOLTAGE_1;
                 New_Page_Status = PAGE_CAPACITY;
             } else if ((Key_Value & BIT4)) {
-                New_Page_Status = PAGE_ANALOG_1;
+                New_Page_Status     = PAGE_ANALOG_1;
                 SelectCH_Line_Index = 3;
             }
             break;
@@ -1015,7 +1907,7 @@ void Page_Select_Ctrl(void) {
             } else if ((Key_Value & BIT3)) {
                 New_Page_Status = PAGE_VOLTAGE_1;
             } else if ((Key_Value & BIT4)) {
-                New_Page_Status = PAGE_ANALOG_1;
+                New_Page_Status     = PAGE_ANALOG_1;
                 SelectCH_Line_Index = 3;
             }
             break;
@@ -1024,7 +1916,7 @@ void Page_Select_Ctrl(void) {
             if ((Key_Value & (BIT2 | BIT3))) {
                 New_Page_Status = PAGE_WARNING_2;
             } else if ((Key_Value & BIT4)) {
-                New_Page_Status = PAGE_STATUS;
+                New_Page_Status     = PAGE_STATUS;
                 SelectCH_Line_Index = 1;
             }
             break;
@@ -1033,7 +1925,7 @@ void Page_Select_Ctrl(void) {
             if ((Key_Value & (BIT2 | BIT3))) {
                 New_Page_Status = PAGE_WARNING_1;
             } else if ((Key_Value & BIT4)) {
-                New_Page_Status = PAGE_STATUS;
+                New_Page_Status     = PAGE_STATUS;
                 SelectCH_Line_Index = 1;
             }
             break;
@@ -1044,7 +1936,7 @@ void Page_Select_Ctrl(void) {
             } else if ((Key_Value & BIT3)) {
                 New_Page_Status = PAGE_PROTECTION_2;
             } else if ((Key_Value & BIT4)) {
-                New_Page_Status = PAGE_STATUS;
+                New_Page_Status     = PAGE_STATUS;
                 SelectCH_Line_Index = 2;
             }
             break;
@@ -1055,7 +1947,7 @@ void Page_Select_Ctrl(void) {
             } else if ((Key_Value & BIT3)) {
                 New_Page_Status = PAGE_PROTECTION_1;
             } else if ((Key_Value & BIT4)) {
-                New_Page_Status = PAGE_STATUS;
+                New_Page_Status     = PAGE_STATUS;
                 SelectCH_Line_Index = 2;
             }
             break;
@@ -1066,7 +1958,7 @@ void Page_Select_Ctrl(void) {
             } else if ((Key_Value & BIT3)) {
                 New_Page_Status = PAGE_FAILALARM_2;
             } else if ((Key_Value & BIT4)) {
-                New_Page_Status = PAGE_STATUS;
+                New_Page_Status     = PAGE_STATUS;
                 SelectCH_Line_Index = 3;
             }
             break;
@@ -1077,7 +1969,7 @@ void Page_Select_Ctrl(void) {
             } else if ((Key_Value & BIT3)) {
                 New_Page_Status = PAGE_FAILALARM_3;
             } else if ((Key_Value & BIT4)) {
-                New_Page_Status = PAGE_STATUS;
+                New_Page_Status     = PAGE_STATUS;
                 SelectCH_Line_Index = 3;
             }
             break;
@@ -1088,7 +1980,7 @@ void Page_Select_Ctrl(void) {
             } else if ((Key_Value & BIT3)) {
                 New_Page_Status = PAGE_FAILALARM_1;
             } else if ((Key_Value & BIT4)) {
-                New_Page_Status = PAGE_STATUS;
+                New_Page_Status     = PAGE_STATUS;
                 SelectCH_Line_Index = 3;
             }
             break;
@@ -1103,34 +1995,38 @@ void Page_Select_Ctrl(void) {
 
                 SelectCH_Line_Index = 0;
             } else if ((Key_Value & BIT2)) {
-                if (SelectCH_Line_Index == 0) { SelectCH_Line_Index = 3; }
+                if (SelectCH_Line_Index == 0) {
+                    SelectCH_Line_Index = 3;
+                }
                 SelectCH_Line_Index--;
                 Show_SelectCh(SelectCH_Line_Index);
             } else if ((Key_Value & BIT3)) {
-                if (++SelectCH_Line_Index >= 2) { SelectCH_Line_Index = 0; }
+                if (++SelectCH_Line_Index >= 2) {
+                    SelectCH_Line_Index = 0;
+                }
                 Show_SelectCh(SelectCH_Line_Index);
             } else if ((Key_Value & BIT4)) {
-                New_Page_Status = PAGE_MENU;
+                New_Page_Status     = PAGE_MENU;
                 SelectCH_Line_Index = 3;
             }
             break;
 
         case PAGE_BMS_VERSION: //按键返回上一界面
             if ((Key_Value & BIT4)) {
-                New_Page_Status = PAGE_SYSTEMSET;
+                New_Page_Status     = PAGE_SYSTEMSET;
                 SelectCH_Line_Index = 0;
             }
             break;
         case PAGE_LCD_VERSION:
             if ((Key_Value & BIT4)) {
-                New_Page_Status = PAGE_SYSTEMSET;
+                New_Page_Status     = PAGE_SYSTEMSET;
                 SelectCH_Line_Index = 1;
             }
             break;
 
         default: break;
     }
-}
+}*/
 
 //======================================================================
 // Function:	Show_Temperature()
@@ -1145,31 +2041,33 @@ void Show_Temperature(int8_t Row, int8_t Col, int16_t Data) {
         Lcd_showChar6_8(Row, Col + 0 * 8, ' ', 0);
         Lcd_showChar6_8(Row, Col + 4 * 8, ' ', 0);
         if (Tmp >= 1000) {
-            Lcd_showChar6_8(Row, Col + 1 * 8, (uint8_t)(Tmp / 1000) + '0', 0);
-            Lcd_showChar6_8(Row, Col + 2 * 8, (uint8_t)((Tmp / 100) % 10) + '0', 0);
+            Lcd_showChar6_8(Row, Col + 1 * 8, (uint8_t) (Tmp / 1000) + '0', 0);
+            Lcd_showChar6_8(Row, Col + 2 * 8, (uint8_t) ((Tmp / 100) % 10) + '0', 0);
         } else {
             Lcd_showChar6_8(Row, Col + 1 * 8, ' ', 0);
             if (Tmp >= 100) {
-                Lcd_showChar6_8(Row, Col + 2 * 8, (uint8_t)((Tmp / 100) % 10) + '0', 0);
+                Lcd_showChar6_8(Row, Col + 2 * 8, (uint8_t) ((Tmp / 100) % 10) + '0', 0);
             } else {
                 Lcd_showChar6_8(Row, Col + 2 * 8, ' ', 0);
             }
         }
-        Lcd_showChar6_8(Row, Col + 3 * 8, (uint8_t)((Tmp / 10) % 10) + '0', 0);
+        Lcd_showChar6_8(Row, Col + 3 * 8, (uint8_t) ((Tmp / 10) % 10) + '0', 0);
     } else {
         Tmp = 0 - Data;
-        if (Tmp > 999) { Tmp = 999; }
+        if (Tmp > 999) {
+            Tmp = 999;
+        }
         Tmp = Tmp * 10 / 10;
         Lcd_showChar6_8(Row, Col + 0 * 8, ' ', 0);
         Lcd_showChar6_8(Row, Col + 4 * 8, ' ', 0);
         if (Tmp >= 100) {
             Lcd_showChar6_8(Row, Col + 1 * 8, '-', 0);
-            Lcd_showChar6_8(Row, Col + 2 * 8, (uint8_t)(Tmp / 100) + '0', 0);
+            Lcd_showChar6_8(Row, Col + 2 * 8, (uint8_t) (Tmp / 100) + '0', 0);
         } else {
             Lcd_showChar6_8(Row, Col + 1 * 8, ' ', 0);
             Lcd_showChar6_8(Row, Col + 2 * 8, '-', 0);
         }
-        Lcd_showChar6_8(Row, Col + 3 * 8, (uint8_t)((Tmp / 10) % 10) + '0', 0);
+        Lcd_showChar6_8(Row, Col + 3 * 8, (uint8_t) ((Tmp / 10) % 10) + '0', 0);
     }
 }
 /*显示首页6*16电芯温度*/
@@ -1182,32 +2080,34 @@ void Show_Temperature1(int8_t Row, int8_t Col, int16_t Data) {
         Lcd_showChar6_16(Row, Col + 0 * 8, ' ', 0);
         Lcd_showChar6_16(Row, Col + 4 * 8, ' ', 0);
         if (Tmp >= 1000) {
-            Lcd_showChar6_16(Row, Col + 1 * 8, (uint8_t)(Tmp / 1000)%10 + '0', 0);
-            Lcd_showChar6_16(Row, Col + 2 * 8, (uint8_t)((Tmp / 100) % 10) + '0', 0);
+            Lcd_showChar6_16(Row, Col + 1 * 8, (uint8_t) (Tmp / 1000) % 10 + '0', 0);
+            Lcd_showChar6_16(Row, Col + 2 * 8, (uint8_t) ((Tmp / 100) % 10) + '0', 0);
         } else {
             Lcd_showChar6_16(Row, Col + 1 * 8, ' ', 0);
             if (Tmp >= 100) {
-                Lcd_showChar6_16(Row, Col + 2 * 8, (uint8_t)((Tmp / 100) % 10) + '0', 0);
+                Lcd_showChar6_16(Row, Col + 2 * 8, (uint8_t) ((Tmp / 100) % 10) + '0', 0);
             } else {
                 Lcd_showChar6_16(Row, Col + 2 * 8, ' ', 0);
             }
         }
-        Lcd_showChar6_16(Row, Col + 3 * 8, (uint8_t)((Tmp / 10) % 10) + '0', 0);
+        Lcd_showChar6_16(Row, Col + 3 * 8, (uint8_t) ((Tmp / 10) % 10) + '0', 0);
     } else {
         Tmp = 0 - Data;
-        if (Tmp > 999) { Tmp = 999; }
+        if (Tmp > 999) {
+            Tmp = 999;
+        }
         Tmp = Tmp * 10 / 10;
         Lcd_showChar6_16(Row, Col + 0 * 8, ' ', 0);
         Lcd_showChar6_16(Row, Col + 4 * 8, ' ', 0);
 
         if (Tmp >= 100) {
             Lcd_showChar6_16(Row, Col + 1 * 8, '-', 0);
-            Lcd_showChar6_16(Row, Col + 2 * 8, (uint8_t)(Tmp / 100) %10+ '0', 0);
+            Lcd_showChar6_16(Row, Col + 2 * 8, (uint8_t) (Tmp / 100) % 10 + '0', 0);
         } else {
             Lcd_showChar6_16(Row, Col + 1 * 8, ' ', 0);
             Lcd_showChar6_16(Row, Col + 2 * 8, '-', 0);
         }
-        Lcd_showChar6_16(Row, Col + 3 * 8, (uint8_t)((Tmp / 10) % 10) + '0', 0);
+        Lcd_showChar6_16(Row, Col + 3 * 8, (uint8_t) ((Tmp / 10) % 10) + '0', 0);
     }
 }
 
@@ -1216,7 +2116,8 @@ void Show_Temperature1(int8_t Row, int8_t Col, int16_t Data) {
  *Description:   没有温度数据显示时，显示"   -- "
  *
  *******************************************************************************/
-//void Show_TemperatureNull(uint8_t Row) { Lcd_showStringEN(Row, 9 * 8, "  -- ", 0); }
+// void Show_TemperatureNull(uint8_t Row) { Lcd_showStringEN(Row, 9 * 8, "  --
+// ", 0); }
 
 //======================================================================
 // Function:	Show_Cell_Voltage()
@@ -1224,20 +2125,22 @@ void Show_Temperature1(int8_t Row, int8_t Col, int16_t Data) {
 //======================================================================
 void Show_Data_4Bit(uint8_t Row, uint8_t Col, uint16_t Data) {
     if (Data >= 1000) {
-        if (Data > 9999) { Data = 9999; }
-        Lcd_showChar6_8(Row, Col + 0 * 8, (uint8_t)(Data / 1000) + '0', 0);
-        Lcd_showChar6_8(Row, Col + 1 * 8, (uint8_t)((Data / 100) % 10) + '0', 0);
-        Lcd_showChar6_8(Row, Col + 2 * 8, (uint8_t)((Data / 10) % 10) + '0', 0);
-        Lcd_showChar6_8(Row, Col + 3 * 8, (uint8_t)(Data % 10) + '0', 0);
+        if (Data > 9999) {
+            Data = 9999;
+        }
+        Lcd_showChar6_8(Row, Col + 0 * 8, (uint8_t) (Data / 1000) + '0', 0);
+        Lcd_showChar6_8(Row, Col + 1 * 8, (uint8_t) ((Data / 100) % 10) + '0', 0);
+        Lcd_showChar6_8(Row, Col + 2 * 8, (uint8_t) ((Data / 10) % 10) + '0', 0);
+        Lcd_showChar6_8(Row, Col + 3 * 8, (uint8_t) (Data % 10) + '0', 0);
     } else if (Data >= 100) {
         Lcd_showChar6_8(Row, Col + 0 * 8, ' ', 0);
-        Lcd_showChar6_8(Row, Col + 1 * 8, (uint8_t)(Data / 100) + '0', 0);
-        Lcd_showChar6_8(Row, Col + 2 * 8, (uint8_t)((Data / 10) % 10) + '0', 0);
-        Lcd_showChar6_8(Row, Col + 3 * 8, (uint8_t)(Data % 10) + '0', 0);
+        Lcd_showChar6_8(Row, Col + 1 * 8, (uint8_t) (Data / 100) + '0', 0);
+        Lcd_showChar6_8(Row, Col + 2 * 8, (uint8_t) ((Data / 10) % 10) + '0', 0);
+        Lcd_showChar6_8(Row, Col + 3 * 8, (uint8_t) (Data % 10) + '0', 0);
     } else if (Data >= 10) {
         Lcd_showChar6_8(Row, Col + 0 * 8, ' ', 0);
-        Lcd_showChar6_8(Row, Col + 1 * 8, (uint8_t)(Data / 10) + '0', 0);
-        Lcd_showChar6_8(Row, Col + 2 * 8, (uint8_t)(Data % 10) + '0', 0);
+        Lcd_showChar6_8(Row, Col + 1 * 8, (uint8_t) (Data / 10) + '0', 0);
+        Lcd_showChar6_8(Row, Col + 2 * 8, (uint8_t) (Data % 10) + '0', 0);
         Lcd_showChar6_8(Row, Col + 3 * 8, ' ', 0);
     } else {
         Lcd_showChar6_8(Row, Col + 0 * 8, ' ', 0);
@@ -1247,23 +2150,25 @@ void Show_Data_4Bit(uint8_t Row, uint8_t Col, uint16_t Data) {
     }
 }
 
-//首页单体电压显示6*7字体
+// 首页单体电压显示6*7字体
 void Show_Data_4Bit1(uint8_t Row, uint8_t Col, uint16_t Data) {
     if (Data >= 1000) {
-        if (Data > 9999) { Data = 9999; }
-        Lcd_showCha6_7(Row, Col + 0 * 6, (uint8_t)(Data / 1000) + '0', 1);
-        Lcd_showCha6_7(Row, Col + 1 * 6, (uint8_t)((Data / 100) % 10) + '0', 1);
-        Lcd_showCha6_7(Row, Col + 2 * 6, (uint8_t)((Data / 10) % 10) + '0', 1);
-        Lcd_showCha6_7(Row, Col + 3 * 6, (uint8_t)(Data % 10) + '0', 1);
+        if (Data > 9999) {
+            Data = 9999;
+        }
+        Lcd_showCha6_7(Row, Col + 0 * 6, (uint8_t) (Data / 1000) + '0', 1);
+        Lcd_showCha6_7(Row, Col + 1 * 6, (uint8_t) ((Data / 100) % 10) + '0', 1);
+        Lcd_showCha6_7(Row, Col + 2 * 6, (uint8_t) ((Data / 10) % 10) + '0', 1);
+        Lcd_showCha6_7(Row, Col + 3 * 6, (uint8_t) (Data % 10) + '0', 1);
     } else if (Data >= 100) {
         Lcd_showCha6_7(Row, Col + 0 * 6, ' ', 0);
-        Lcd_showCha6_7(Row, Col + 1 * 6, (uint8_t)(Data / 100) + '0', 1);
-        Lcd_showCha6_7(Row, Col + 2 * 6, (uint8_t)((Data / 10) % 10) + '0', 1);
-        Lcd_showCha6_7(Row, Col + 3 * 6, (uint8_t)(Data % 10) + '0', 1);
+        Lcd_showCha6_7(Row, Col + 1 * 6, (uint8_t) (Data / 100) + '0', 1);
+        Lcd_showCha6_7(Row, Col + 2 * 6, (uint8_t) ((Data / 10) % 10) + '0', 1);
+        Lcd_showCha6_7(Row, Col + 3 * 6, (uint8_t) (Data % 10) + '0', 1);
     } else if (Data >= 10) {
         Lcd_showCha6_7(Row, Col + 0 * 6, ' ', 0);
-        Lcd_showCha6_7(Row, Col + 1 * 6, (uint8_t)(Data / 10) + '0', 1);
-        Lcd_showCha6_7(Row, Col + 2 * 6, (uint8_t)(Data % 10) + '0', 1);
+        Lcd_showCha6_7(Row, Col + 1 * 6, (uint8_t) (Data / 10) + '0', 1);
+        Lcd_showCha6_7(Row, Col + 2 * 6, (uint8_t) (Data % 10) + '0', 1);
         Lcd_showCha6_7(Row, Col + 3 * 6, ' ', 0);
     } else {
         Lcd_showCha6_7(Row, Col + 0 * 6, ' ', 0);
@@ -1283,10 +2188,10 @@ void Show_Current(uint8_t Row, uint8_t Col, int16_t Data) {
 
     Tmp = abs(Data);
     Lcd_showChar6_8(Row, Col, ' ', 0);
-    BaiWei = 0;
-    ShiWei = 0;
-    GeWei = 0;
-    Fen_10 = 0;
+    BaiWei  = 0;
+    ShiWei  = 0;
+    GeWei   = 0;
+    Fen_10  = 0;
     Fen_100 = 0;
     while (Tmp >= 10000) {
         Tmp -= 10000;
@@ -1309,21 +2214,27 @@ void Show_Current(uint8_t Row, uint8_t Col, int16_t Data) {
         Fen_100++;
     }
 
-    if (0 == BaiWei) //最高位为0，显示空格
+    if (0 == BaiWei) // 最高位为0，显示空格
     {
         BaiWei = ' ';
         if (0 == ShiWei) ShiWei = ' ';
         else {
-            if (Data < 0) { BaiWei = '-'; }
+            if (Data < 0) {
+                BaiWei = '-';
+            }
             ShiWei += '0';
         }
     } else {
-        if (Data < 0) { Lcd_showChar6_8(Row, Col, '-', 0); }
+        if (Data < 0) {
+            Lcd_showChar6_8(Row, Col, '-', 0);
+        }
         BaiWei += '0';
         ShiWei += '0';
     }
 
-    if ((Data < 0) && (BaiWei == ' ') && (ShiWei == ' ')) { ShiWei = '-'; }
+    if ((Data < 0) && (BaiWei == ' ') && (ShiWei == ' ')) {
+        ShiWei = '-';
+    }
     GeWei += '0';
     Fen_10 += '0';
     Fen_100 += '0';
@@ -1336,16 +2247,16 @@ void Show_Current(uint8_t Row, uint8_t Col, int16_t Data) {
 }
 
 /*首页显示电流*/
-void  Show_Current1(uint8_t Row, uint8_t Col, int16_t Data) {
+void Show_Current1(uint8_t Row, uint8_t Col, int16_t Data) {
     uint16_t Tmp;
     uint8_t BaiWei, ShiWei, GeWei, Fen_10, Fen_100;
 
     Tmp = abs(Data);
     Lcd_showChar(Row, Col, ' ', 0);
-    BaiWei = 0;
-    ShiWei = 0;
-    GeWei = 0;
-    Fen_10 = 0;
+    BaiWei  = 0;
+    ShiWei  = 0;
+    GeWei   = 0;
+    Fen_10  = 0;
     Fen_100 = 0;
     while (Tmp >= 10000) {
         Tmp -= 10000;
@@ -1363,32 +2274,38 @@ void  Show_Current1(uint8_t Row, uint8_t Col, int16_t Data) {
         Tmp -= 10;
         Fen_10++;
     }
-//    while (Tmp >= 1) {
-//        Tmp -= 1;
-//        Fen_100++;
-//    }
+    /*while (Tmp >= 1) {
+        Tmp -= 1;
+        Fen_100++;
+    }*/
 
-    if (0 == BaiWei) {//最高位为0，显示空格
+    if (0 == BaiWei) { // 最高位为0，显示空格
         BaiWei = ' ';
         if (0 == ShiWei) ShiWei = ' ';
         else {
-            if (Data < 0) { BaiWei = '-'; }
+            if (Data < 0) {
+                BaiWei = '-';
+            }
             ShiWei += '0';
         }
     } else {
-        if (Data < 0) { Lcd_showChar(Row, Col, '-', 0); }
+        if (Data < 0) {
+            Lcd_showChar(Row, Col, '-', 0);
+        }
         BaiWei += '0';
         ShiWei += '0';
     }
 
-    if ((Data < 0) && (BaiWei == ' ') && (ShiWei == ' ')) { ShiWei = '-'; }
+    if ((Data < 0) && (BaiWei == ' ') && (ShiWei == ' ')) {
+        ShiWei = '-';
+    }
     GeWei += '0';
     Fen_10 += '0';
-//    Fen_100 += '0';
+    //    Fen_100 += '0';
 
-    Lcd_showChar(Row, Col + 8,  BaiWei,  0);
-    Lcd_showChar(Row, Col + 16,  ShiWei, 0);
-    Lcd_showChar(Row, Col + 24,  GeWei ,  0);
+    Lcd_showChar(Row, Col + 8, BaiWei, 0);
+    Lcd_showChar(Row, Col + 16, ShiWei, 0);
+    Lcd_showChar(Row, Col + 24, GeWei, 0);
     Lcd_showChar(4, Col + 32, '.', 0);
     Lcd_showChar(Row, Col + 40, Fen_10, 0);
 }
@@ -1399,29 +2316,30 @@ void  Show_Current1(uint8_t Row, uint8_t Col, int16_t Data) {
 //======================================================================
 void Show_TotalVoltage(uint8_t Row, uint8_t Col, uint16_t Data) {
     if (Data >= 10000) {
-        Lcd_showChar6_8(Row, Col + 0 * 8, (uint8_t)(Data / 10000) + '0', 0);
-        Lcd_showChar6_8(Row, Col + 1 * 8, (uint8_t)((Data / 1000) % 10) + '0', 0);
+        Lcd_showChar6_8(Row, Col + 0 * 8, (uint8_t) (Data / 10000) + '0', 0);
+        Lcd_showChar6_8(Row, Col + 1 * 8, (uint8_t) ((Data / 1000) % 10) + '0', 0);
     } else {
         Lcd_showChar6_8(Row, Col + 0 * 8, ' ', 0);
-        Lcd_showChar6_8(Row, Col + 1 * 8, (uint8_t)(Data / 1000) + '0', 0);
+        Lcd_showChar6_8(Row, Col + 1 * 8, (uint8_t) (Data / 1000) + '0', 0);
     }
     Lcd_showChar6_8(Row, Col + 2 * 8, '.', 0);
-    Lcd_showChar6_8(Row, Col + 3 * 8, (uint8_t)((Data / 100) % 10) + '0', 0);
-    Lcd_showChar6_8(Row, Col + 4 * 8, (uint8_t)((Data / 10) % 10) + '0', 0);
+    Lcd_showChar6_8(Row, Col + 3 * 8, (uint8_t) ((Data / 100) % 10) + '0', 0);
+    Lcd_showChar6_8(Row, Col + 4 * 8, (uint8_t) ((Data / 10) % 10) + '0', 0);
 }
 
-//首页10*12显示电压
+// 首页10*12显示电压
 void Show_TotalVoltage1(uint8_t Row, uint8_t Col, uint16_t Data) {
     if (Data >= 10000) {
-        Lcd_showChar(Row, Col + 0 * 8, (uint8_t)(Data / 10000) + '0', 0);
-        Lcd_showChar(Row, Col + 1 * 8, (uint8_t)((Data / 1000) % 10) + '0', 0);
+        Lcd_showChar(Row, Col + 0 * 8, (uint8_t) (Data / 10000) + '0', 0);
+        Lcd_showChar(Row, Col + 1 * 8, (uint8_t) ((Data / 1000) % 10) + '0', 0);
     } else {
         Lcd_showChar(Row, Col + 0 * 8, ' ', 0);
-        Lcd_showChar(Row, Col + 1 * 8, (uint8_t)(Data / 1000) + '0', 0);
+        Lcd_showChar(Row, Col + 1 * 8, (uint8_t) (Data / 1000) + '0', 0);
     }
     Lcd_showCha6_7(1, Col + 2 * 8, '.', 0);
-    Lcd_showChar(Row, Col + 3 * 8, (uint8_t)((Data / 100) % 10) + '0', 0);
-//    Lcd_showChar(Row, Col + 4 * 8, (uint8_t)((Data / 10) % 10) + '0', 0);//后两位小数点
+    Lcd_showChar(Row, Col + 3 * 8, (uint8_t) ((Data / 100) % 10) + '0', 0);
+    /*Lcd_showChar(Row, Col + 4 * 8, (uint8_t) ((Data / 10) % 10) + '0',
+                 0); //后两位小数点*/
 }
 
 //======================================================================
@@ -1587,44 +2505,44 @@ void Page_Digital_Show(void) {
             break;
 
         case PAGE_CAPACITY:
-            if (((Soc / 100) % 10) == 0) Lcd_showChar6_8(0, 11 * 8, ' ', 0); //SOC
+            if (((Soc / 100) % 10) == 0) Lcd_showChar6_8(0, 11 * 8, ' ', 0); // SOC
             else
-                Lcd_showChar6_8(0, 11 * 8, (uint8_t)((Soc / 100) % 10) + '0', 0);
+                Lcd_showChar6_8(0, 11 * 8, (uint8_t) ((Soc / 100) % 10) + '0', 0);
 
             if ((((Soc / 10) % 10) == 0) && (((Soc / 100) % 10) == 0)) Lcd_showChar6_8(0, 12 * 8, ' ', 0);
             else
-                Lcd_showChar6_8(0, 12 * 8, (uint8_t)((Soc / 10) % 10) + '0', 0);
-            Lcd_showChar6_8(0, 13 * 8, (uint8_t)(Soc % 10) + '0', 0);
+                Lcd_showChar6_8(0, 12 * 8, (uint8_t) ((Soc / 10) % 10) + '0', 0);
+            Lcd_showChar6_8(0, 13 * 8, (uint8_t) (Soc % 10) + '0', 0);
 
-            if (PackData.Fcc >= 10000) { //总容量
-                Lcd_showChar6_8(2, 9 * 8, (uint8_t)(PackData.Fcc / 10000) + '0', 0);
-                Lcd_showChar6_8(2, 10 * 8, (uint8_t)((PackData.Fcc / 1000) % 10) + '0', 0);
+            if (PackData.Fcc >= 10000) { // 总容量
+                Lcd_showChar6_8(2, 9 * 8, (uint8_t) (PackData.Fcc / 10000) + '0', 0);
+                Lcd_showChar6_8(2, 10 * 8, (uint8_t) ((PackData.Fcc / 1000) % 10) + '0', 0);
             } else if (PackData.Fcc >= 1000) {
                 Lcd_showChar6_8(2, 9 * 8, ' ', 0);
-                Lcd_showChar6_8(2, 10 * 8, (uint8_t)(PackData.Fcc / 1000) + '0', 0);
+                Lcd_showChar6_8(2, 10 * 8, (uint8_t) (PackData.Fcc / 1000) + '0', 0);
             } else {
                 Lcd_showChar6_8(2, 9 * 8, ' ', 0);
                 Lcd_showChar6_8(2, 10 * 8, ' ', 0);
             }
-            Lcd_showChar6_8(2, 11 * 8, (uint8_t)((PackData.Fcc / 100) % 10) + '0', 0);
+            Lcd_showChar6_8(2, 11 * 8, (uint8_t) ((PackData.Fcc / 100) % 10) + '0', 0);
             Lcd_showChar6_8(2, 12 * 8, '.', 0);
-            Lcd_showChar6_8(2, 13 * 8, (uint8_t)((PackData.Fcc / 10) % 10) + '0', 0);
+            Lcd_showChar6_8(2, 13 * 8, (uint8_t) ((PackData.Fcc / 10) % 10) + '0', 0);
 
-            if (PackData.Rm >= 10000) { //剩余容量
-                Lcd_showChar6_8(4, 9 * 8, (uint8_t)(PackData.Rm / 10000) + '0', 0);
-                Lcd_showChar6_8(4, 10 * 8, (uint8_t)((PackData.Rm / 1000) % 10) + '0', 0);
+            if (PackData.Rm >= 10000) { // 剩余容量
+                Lcd_showChar6_8(4, 9 * 8, (uint8_t) (PackData.Rm / 10000) + '0', 0);
+                Lcd_showChar6_8(4, 10 * 8, (uint8_t) ((PackData.Rm / 1000) % 10) + '0', 0);
             } else if (PackData.Rm >= 1000) {
                 Lcd_showChar6_8(4, 9 * 8, ' ', 0);
-                Lcd_showChar6_8(4, 10 * 8, (uint8_t)(PackData.Rm / 1000) + '0', 0);
+                Lcd_showChar6_8(4, 10 * 8, (uint8_t) (PackData.Rm / 1000) + '0', 0);
             } else {
                 Lcd_showChar6_8(4, 9 * 8, ' ', 0);
                 Lcd_showChar6_8(4, 10 * 8, ' ', 0);
             }
-            Lcd_showChar6_8(4, 11 * 8, (uint8_t)((PackData.Rm / 100) % 10) + '0', 0);
+            Lcd_showChar6_8(4, 11 * 8, (uint8_t) ((PackData.Rm / 100) % 10) + '0', 0);
             Lcd_showChar6_8(4, 12 * 8, '.', 0);
-            Lcd_showChar6_8(4, 13 * 8, (uint8_t)((PackData.Rm / 10) % 10) + '0', 0);
+            Lcd_showChar6_8(4, 13 * 8, (uint8_t) ((PackData.Rm / 10) % 10) + '0', 0);
 
-            Show_Data_4Bit(6, 12 * 8, PackData.Cycle); //循环次数
+            Show_Data_4Bit(6, 12 * 8, PackData.Cycle); // 循环次数
             break;
 
             /*告警状态*/
@@ -1719,14 +2637,12 @@ void Page_Digital_Show(void) {
             Show_Data_4Bit(6, 12 * 8, Record.Over_Chg_Count);
             break;
 
-        case PAGE_FAILALARM_3:
-            Show_Data_4Bit(0, 12 * 8, Record.Over_Dchg_Count);
-            break;
+        case PAGE_FAILALARM_3: Show_Data_4Bit(0, 12 * 8, Record.Over_Dchg_Count); break;
 
-        case PAGE_BMS_VERSION://版本号
-//            Show_Data_4Bit(6, 7 * 8, PackData.Project_code_[9]);
-//            Show_Data_4Bit(6, 7 * 8, PackData.Project_code[0]);
-//            Show_Data_4Bit(6, 7 * 8, 6);
+        case PAGE_BMS_VERSION: // 版本号
+            //            Show_Data_4Bit(6, 7 * 8, PackData.Project_code_[9]);
+            //            Show_Data_4Bit(6, 7 * 8, PackData.Project_code[0]);
+            //            Show_Data_4Bit(6, 7 * 8, 6);
             break;
 #if 0
             /*首页剩余容量*/
@@ -1809,59 +2725,53 @@ void Page_Change_Ctrl(void) {
 
     Old_Page_Status = New_Page_Status;
     Clear_Screen(0x00, 0x00);
-//    Clear_Screen(0xFF,0xFF);		//界面切换时有阴影问题
+    //    Clear_Screen(0xFF,0xFF);		//界面切换时有阴影问题
 
     switch (New_Page_Status) {
-//        case PAGE_WELCOME: Page_Welcome(); break; //新增按键操作，数据更新
-        case PAGE_WELCOME: Page_Welcome_new(); break; //新增按键操作，数据更新
-
-        case PAGE_MENU: Page_Menu(); break;
-
+        // case PAGE_WELCOME: Page_Welcome(); break;     //新增按键操作，数据更新
+        case PAGE_WELCOME: Page_Welcome_new(); break; // 新增按键操作，数据更新
+        case PAGE_MENU_1: Page_Menu_1(); break;
+        case PAGE_MENU_2: Page_Menu_2(); break;
         case PAGE_ANALOG_1: Page_Analog_1(); break;
-//        case PAGE_ANALOG_2: Page_Analog_2(); break;
-
+        // case PAGE_ANALOG_2: Page_Analog_2(); break;
         case PAGE_STATUS: Page_Status(); break;
-
         case PAGE_PARASET: Page_ParaSet(); break;
-
         case PAGE_SYSTEMSET: Page_SystemSet(); break;
-
-        case PAGE_TEMPERATURE_1: Page_Temperature_1();break;
-
-//        case PAGE_TEMPERATURE_2: Page_Temperature_2(); break; //8路NTC
-
+        case PAGE_TEMPERATURE_1: Page_Temperature_1(); break;
+        // case PAGE_TEMPERATURE_2: Page_Temperature_2(); break; //8路NTC
         case PAGE_TEMPERATURE_3: Page_Temperature_3(); break;
-
         case PAGE_VOLTAGE_1: Page_Voltage_1(); break;
-
         case PAGE_VOLTAGE_2: Page_Voltage_2(); break;
-
         case PAGE_VOLTAGE_3: Page_Voltage_3(); break;
-
         case PAGE_VOLTAGE_4: Page_Voltage_4(); break;
-
         case PAGE_CAPACITY: Page_Capacity(); break;
-
         case PAGE_WARNING_1: Page_Warning_1(); break;
-
         case PAGE_WARNING_2: Page_Warning_2(); break;
-
         case PAGE_PROTECTION_1: Page_Protection_1(); break;
-
         case PAGE_PROTECTION_2: Page_Protection_2(); break;
-
-//        case PAGE_PROTECTION_3:Page_Protection_3();break;
-
+        // case PAGE_PROTECTION_3: Page_Protection_3(); break;
         case PAGE_FAILALARM_1: Page_FailAlarm_1(); break;
-
         case PAGE_FAILALARM_2: Page_FailAlarm_2(); break;
-
         case PAGE_FAILALARM_3: Page_FailAlarm_3(); break;
-
         case PAGE_BMS_VERSION: Page_BMS_Version(); break;
-
         case PAGE_LCD_VERSION: Page_LCD_Version(); break;
-
+#if PROTOCOL_EN_ALL == 1
+        case PAGE_CAN_PAGE_1: page_can_protocol_1(); break;
+        case PAGE_CAN_PAGE_2: page_can_protocol_2(); break;
+        case PAGE_CAN_PAGE_3: page_can_protocol_3(); break;
+        case PAGE_CAN_PAGE_4: page_can_protocol_4(); break;
+        case PAGE_CAN_PAGE_5: page_can_protocol_5(); break;
+        case PAGE_CAN_PAGE_6: page_can_protocol_6(); break;
+        case PAGE_RS485_PAGE_1: page_rs485_protocol_1(); break;
+        case PAGE_RS485_PAGE_2: page_rs485_protocol_2(); break;
+        case PAGE_RS485_PAGE_3: page_rs485_protocol_3(); break;
+        case PAGE_RS485_PAGE_4: page_rs485_protocol_4(); break;
+#else
+        case PAGE_CAN_PAGE_1: page_can_protocol_1(); break;
+        case PAGE_CAN_PAGE_2: page_can_protocol_2(); break;
+        case PAGE_CAN_PAGE_3: page_can_protocol_3(); break;
+        case PAGE_RS485_PAGE_1: page_rs485_protocol_1(); break;
+#endif
         default: break;
     }
     Page_Digital_Show();
@@ -1872,7 +2782,8 @@ void Page_Change_Ctrl(void) {
 // Description:
 //======================================================================
 void Show_Ctrl(void) {
-    Page_Select_Ctrl();
+    // Page_Select_Ctrl();
+    page_handler();
     Page_Change_Ctrl();
 
     if (!Timer[DATA_SHOW_TIMER].Flag) return;

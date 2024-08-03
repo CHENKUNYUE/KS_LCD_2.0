@@ -18,12 +18,7 @@
 
 #include <stdint.h>
 
-#ifndef  CELL_NUM
-#define  CELL_NUM  20
-#define  TEMP_NUM  6
-#define  PACK_NUM  1
-#define  BATT_TEMP_NUM  20
-#endif
+#include "app_config.h"
 
 #define PROTOCOL1363_LCD_ADDR 0xFF
 #define USE_PROTOCOL1363_SNMP 1
@@ -34,7 +29,7 @@
 #if PROTOCOL_1363_RTN_ENABLE > 0
     #define COM_TIME_OUT_MS 1500
 #endif
-
+#pragma pack(4)
 typedef enum {
     limit_CHG_10A = 0,
     limit_CHG_20A,
@@ -115,11 +110,11 @@ typedef union {
 typedef struct {
     uint16_t SOC;
     uint16_t TOT_Vs;
-    uint8_t num_of_cells;//单节电压节数
+    uint8_t num_of_cells; //单节电压节数
     uint16_t cell_list[CELL_NUM];
     uint16_t ENV_TEMP;
-    uint16_t MOS_TEMP;//电池平均温度
-    uint16_t PCBA_TEMP;//MOS温度
+    uint16_t MOS_TEMP;  //电池平均温度
+    uint16_t PCBA_TEMP; //MOS温度
     uint8_t TOT_TEMPs;
     uint16_t TEMP_list[TEMP_NUM];
     uint16_t pack_current;
@@ -481,7 +476,7 @@ typedef struct {
     uint8_t pack_DISCH_UNDV_alarm;
     uint8_t pack_DISCH_OC_alarm;
     uint8_t pack_polarity_reverse_alarm;
-    uint8_t ENV_H_TEMP_alarm;		//环境高温告警
+    uint8_t ENV_H_TEMP_alarm; //环境高温告警
     uint8_t ENV_L_TEMP_alarm;
     uint8_t pack_H_TEMP_alarm; //8
     uint8_t PCBA_H_TEMP_alarm;
@@ -727,7 +722,6 @@ typedef struct {
     uint8_t total_pack;
 } basic_params_typedef; //118
 
-
 //80 basic_params_typedef
 typedef struct { // protect
     uint16_t cell_OVV_PROT;
@@ -915,7 +909,7 @@ typedef struct {
     uint8_t user_costum;
     uint16_t pack_CHG_DISCH_status;
     uint16_t full_CAP;
-    uint16_t remaining_CAP;		//剩余容量
+    uint16_t remaining_CAP; //剩余容量
     uint16_t Cycles;
     uint16_t V_status_list;
     uint16_t C_status_list;
@@ -1182,8 +1176,130 @@ typedef struct {
     MODULE_GYRO_TYPEDEF GYRO;
 } PROTOCOL_MODULE_TYPEDEF;
 
+typedef enum {
+    E_OCV_PARAM = 1,  // OCV 参数
+    E_HW_PROT_PARAM,  // 硬件保护参数
+    E_MFG_PARAM,      // 生产参数
+    E_CAP_PARAM,      // 容量相关参数
+    E_LCD_PARAM,      // LCD模块功能设置
+    E_CAN_PARAM,      // CAN模块功能设置
+    E_PORT_CFG_PARAM, // 端口的波特率及其配套协议
+    E_FNC_EN,         // 功能使能
+} E_PARAM_OPT_TYPE_T;
+
+typedef enum {
+    E_OCV_FUNC_OCV_CONFIG = 1,       //1
+    E_OCV_FUNC_OFFSET_CURRENT,       //2
+    E_OCV_FUNC_CHG_I_K_VALUE,        //3
+    E_OCV_FUNC_DISCH_I_K_VALUE,      //4
+    E_OCV_FUNC_SELF_DISCHARGE_RATE,  //5
+    E_OCV_FUNC_VOLT_AT_00_SOC,       //6
+    E_OCV_FUNC_VOLT_AT_20_SOC,       //7
+    E_OCV_FUNC_VOLT_AT_40_SOC,       //8
+    E_OCV_FUNC_VOLT_AT_80_SOC,       //9
+    E_OCV_FUNC_VOLT_AT_100_SOC,      //10
+    E_OCV_FUNC_PROPORTION_OF_CYCLES, //11
+    E_OCV_FUNC_CELL_FULL_CHG_VOLT,   //12
+    E_OCV_FUNC_CELL_LOW_DISCH_VOLT,  //13
+    E_OCV_FUNC_R_SENSOR_VALUE,       //14
+} E_OPT_OCV_FUCTION_T;
+
+typedef struct {
+    union {
+        struct {
+            uint16_t en : 1;
+            uint16_t execute_immediately : 1;
+            uint16_t RSVD : 14;
+        } bits;
+        uint16_t value;
+    } OCV_config;
+    uint16_t offset_current;       /*0.1A*/
+    uint16_t CHG_I_K_Value;        /*0.0001*/
+    uint16_t DISCH_I_K_Value;      /*0.0001*/
+    uint16_t Self_discharge_rate;  /*0.0001*/
+    uint16_t volt_at_00_soc;       /*0.001V*/
+    uint16_t volt_at_20_soc;       /*0.001V*/
+    uint16_t volt_at_40_soc;       /*0.001V*/
+    uint16_t volt_at_80_soc;       /*0.001V*/
+    uint16_t volt_at_100_soc;      /*0.001V*/
+    uint16_t proportion_of_cycles; /*1% 循环次数比例*/
+    uint16_t cell_full_CHG_volt;   /*0.001V*/
+    uint16_t cell_low_DISCH_volt;  /*0.001V*/
+    uint16_t R_sensor_value;       /*0.01mΩ*/
+
+} PARAM_OPT_OCV_T;
+
+typedef struct {
+    uint16_t OCP_value;          /*1A*/
+    uint16_t OCP_delay;          /*1ms*/
+    uint16_t SCP_value;          /*1A*/
+    uint16_t SCP_delay;          /*1ms*/
+    uint16_t SCP_recovery_delay; /*1ms*/
+    uint16_t CELL_OVP_value;     /*1A*/
+    uint16_t CELL_OVP_delay;     /*1ms*/
+    uint16_t CELL_UVP_value;     /*1A*/
+    uint16_t CELL_UVP_delay;     /*1ms*/
+} PARAM_OPT_HW_PROT_T;
+
+typedef struct {
+    uint8_t pack_sn[30];
+    uint8_t product_ID[30];
+    uint8_t bms_sn[30];
+    uint8_t produce_data[4]; // Donnie uint16指针对齐
+    uint8_t manufacturer[20];
+} PARAM_OPT_MFG_T;
+
+typedef struct {
+    uint16_t cap_remaining;   /*0.01AH*/
+    uint16_t cap_full;        /*0.01AH*/
+    uint16_t cap_design;      /*0.01AH*/
+    uint32_t chg_cap_total;   /*1AH*/
+    uint32_t disch_cap_total; /*1AH*/
+    uint16_t chg_cap_kwh;     /*0.1KW*/
+    uint16_t disch_cap_kwh;   /*0.1KW*/
+} PARAM_OPT_CAP_T;
+
+typedef struct {
+    uint16_t can_fn_en; /*2 bytes CAN相关功能的使能 bit7: Chg EN   bit6: Disch EN bit5: 请求强充1  bit4: 请求强充2 bit3: 请求满充*/
+    uint16_t ccl;      /* 0.1A */
+    uint16_t dcl;      /* 0.1A */
+    uint16_t ccl_base; /* 0.1A */
+    uint16_t dcl_base; /* 0.1A */
+    uint16_t ccl_now;  /* 0.1A */
+    uint16_t dcl_now;  /* 0.1A */
+    union {
+        struct {
+            uint16_t rvds0_2 : 3;
+            uint16_t require_full_chg : 1; //请求满充
+            uint16_t force_chg2 : 1;       //强充标记2
+
+            uint16_t force_chg1 : 1; //强充标记1
+            uint16_t disch_enable : 1;
+            uint16_t chg_enable : 1;
+            uint16_t rvds8_15 : 8;
+        };
+        uint16_t can_fn_en_now;
+    };
+} PARAM_OPT_CAN_T;
+
+typedef struct {
+    uint16_t port_protocol;
+    uint8_t port_bps;
+    uint8_t rvd;
+} PARAM_OPT_PROTOCOL_T;
+
+typedef struct {
+    union {
+        struct {
+            // low
+            uint16_t is_enable : 8;
+            uint16_t func : 8;
+        };
+        uint16_t addr_assign; // 地址分配
+    };
+} PARAM_OPT_FUNC_EN_T;
 extern bms_protocol1363_snmp_typedef bms_protocol1363_snmp;
 extern sm_info_typedef g_sm_info;
 #endif
-
+#pragma pack() // 恢复对齐状态
 #endif //COM_PROTOCAL_1363_PARAS_H__

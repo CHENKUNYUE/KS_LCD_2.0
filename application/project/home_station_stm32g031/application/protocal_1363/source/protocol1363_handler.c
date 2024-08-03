@@ -14,9 +14,11 @@
  *              2. ...
  */
 
+#include "protocol1363_handler.h"
 
 #include <stdint.h>
-#include "protocol1363_handler.h"
+
+#include "common_utils.h"
 #include "paras.h"
 #include "protocol1363_data.h"
 #include "protocol_1363_get_para.h"

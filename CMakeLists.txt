@@ -47,6 +47,7 @@ else ()
 endif ()
 
 include_directories(Core/Inc
+        libraries/SEGGER_RTT
         Drivers/STM32G0xx_HAL_Driver/Inc
         Drivers/STM32G0xx_HAL_Driver/Inc/Legacy
         Drivers/CMSIS/Device/ST/STM32G0xx/Include
@@ -55,17 +56,20 @@ include_directories(Core/Inc
         application/project/home_station_stm32g031/application/User/User_Lib/include
         application/project/home_station_stm32g031/application/protocal_1363
         application/project/home_station_stm32g031/application/protocal_1363/include
+        application/project/home_station_stm32g031/application/util
         )
 
 add_definitions(-DUSE_HAL_DRIVER -DSTM32G031xx)
 
 file(GLOB_RECURSE SOURCES
+        "libraries/SEGGER_RTT/*.c"
         "startup/*.*"
         "Drivers/*.*"
 #        "Core/*.*"
         "application/project/home_station_stm32g031/application/User/source/*.c"
         "application/project/home_station_stm32g031/application/User/User_Lib/source/*.c"
         "application/project/home_station_stm32g031/application/protocal_1363/source/*.c"
+        "application/project/home_station_stm32g031/application/util/*.c"
         )
 
 set(LINKER_SCRIPT ${CMAKE_SOURCE_DIR}/linkscripts/STM32g031/STM32G031G8Ux_FLASH.ld)
