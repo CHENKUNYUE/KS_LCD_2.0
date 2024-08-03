@@ -18,6 +18,7 @@
 #include "Data_Init.h"
 #include "Show_Ctrl.h"
 #include "User_Conf.h"
+#include "common_utils.h"
 #include "paras.h"
 #include "protocol1363_handler.h"
 #include "protocol1363_transfer.h"
@@ -26,22 +27,21 @@
 uint8_t Uart_Buffer[Uart_RX_BuffLen];  //Usart接受-发送缓冲区
 uint8_t Uart_Buffer1[Uart_RX_BuffLen]; //Usart接受-发送缓冲区
 uint8_t Uart_TxBuffer[30];             //Usart接受-发送缓冲区
-uint8_t Uart_TxIndex = 0;              //Usart当前发送序号
-uint8_t Uart_TxCount = 0;              //Usart发送计数器
-uint8_t Uart_RecOK = 0;                //Usart完成标志位
-uint8_t Dis_Charge_Flag = 0;
-uint8_t Uart_ERROR = 0;
+uint8_t Uart_TxIndex     = 0;          //Usart当前发送序号
+uint8_t Uart_TxCount     = 0;          //Usart发送计数器
+uint8_t Uart_RecOK       = 0;          //Usart完成标志位
+uint8_t Dis_Charge_Flag  = 0;
+uint8_t sleep_flag       = 0;
+uint16_t uart_error_flag = 0;
 uint16_t CRC_3, g_CRC = 0;
-
 
 uint8_t Comm_Flag_1 = 0, Comm_Flag_2 = 0, Comm_Flag_3 = 0;
 uint8_t Comm_Flag_4 = 0, Comm_Flag_5 = 0;
-uint8_t PlaceFlag_COM = 0;
+uint8_t PlaceFlag_COM  = 0;
 uint8_t X_axisFlag_COM = 0;
 uint8_t SetCommondFlag = 0;
-uint8_t PlaceFlag = 0;
-uint8_t X_axisFlag = 0;
-uint8_t Uart_RecCount = 0;
+uint8_t PlaceFlag      = 0;
+uint8_t X_axisFlag     = 0;
 
 extern uint8_t getValidData;
 extern comm_struct protocol_com;
@@ -59,7 +59,7 @@ uint16_t GetCRC16CheckCode(unsigned char *buf, uint16_t Len, uint16_t CRCPolynom
         ii = buf[i] ^ ii;
         for (j = 1; j <= 8; j++) {
             LSBNoZero = (ii & 0x0001) != 0;
-            ii = ii >> 1;
+            ii        = ii >> 1;
             if (LSBNoZero) ii = ii ^ CRCPolynomial;
         }
     }
@@ -73,27 +73,29 @@ uint16_t GetCRC16CheckCode(unsigned char *buf, uint16_t Len, uint16_t CRCPolynom
 //======================================================================
 void Uart_ReceiveIQR(uint8_t Buffer) {
     static uint16_t Uart_RecCycle = 0;
-    static uint8_t Uart_RecCount = 0;
-    static uint8_t Uart_RecType = SOI;
+    static uint16_t Uart_RecCount  = 0;
+    static uint8_t Uart_RecType   = SOI;
 
-    uint8_t i;
+    uint16_t i;
     protocol1363_get_char(&protocol_com, Buffer);
-    Uart_RecOK = 1;
-    Uart_ERROR = 0;
+    Uart_RecOK      = 1;
+    uart_error_flag = 0;
     if (Uart_RecCount >= (Uart_RX_BuffLen - 1)) {
         Uart_RecCount = 0;
-        Uart_RecType = 0;
+        Uart_RecType  = 0;
         Uart_RecCycle = 0;
         return;
     }
-    if ((Buffer == 0x3A) && (Uart_RecCount == 0)) { Uart_RecType = SOI; }
+    if ((Buffer == 0x3A) && (Uart_RecCount == 0)) {
+        Uart_RecType = SOI;
+    }
     switch (Uart_RecType) {
         case SOI:
             if (Buffer == 0x3A) {
-                Uart_RecCycle = 0;
-                Uart_RecCount = 0;
+                Uart_RecCycle                 = 0;
+                Uart_RecCount                 = 0;
                 Uart_Buffer1[Uart_RecCount++] = Buffer;
-                Uart_RecType = ADDR;
+                Uart_RecType                  = ADDR;
             }
             break;
 
@@ -101,7 +103,7 @@ void Uart_ReceiveIQR(uint8_t Buffer) {
             Uart_Buffer1[Uart_RecCount++] = Buffer;
             if (++Uart_RecCycle >= 2) {
                 Uart_RecCycle = 0;
-                Uart_RecType = CMD;
+                Uart_RecType  = CMD;
             }
 
             break;
@@ -110,7 +112,7 @@ void Uart_ReceiveIQR(uint8_t Buffer) {
             Uart_Buffer1[Uart_RecCount++] = Buffer;
             if (++Uart_RecCycle >= 2) {
                 Uart_RecCycle = 0;
-                Uart_RecType = VER;
+                Uart_RecType  = VER;
             }
 
             break;
@@ -119,7 +121,7 @@ void Uart_ReceiveIQR(uint8_t Buffer) {
             Uart_Buffer1[Uart_RecCount++] = Buffer;
             if (++Uart_RecCycle >= 2) {
                 Uart_RecCycle = 0;
-                Uart_RecType = LENGTH;
+                Uart_RecType  = LENGTH;
             }
 
             break;
@@ -128,7 +130,7 @@ void Uart_ReceiveIQR(uint8_t Buffer) {
             Uart_Buffer1[Uart_RecCount++] = Buffer;
             if (++Uart_RecCycle >= 4) {
                 Uart_RecCycle = 0;
-                Uart_RecType = DATA;
+                Uart_RecType  = DATA;
             }
             break;
 
@@ -141,19 +143,19 @@ void Uart_ReceiveIQR(uint8_t Buffer) {
                 if (++Uart_RecCycle >= (TwoAsciiToHex(Uart_Buffer1[9], Uart_Buffer1[10]) - 16)) //164)//163)161//156
                 {
                     Uart_RecCycle = 0;
-                    Uart_RecType = CHECKSUM;
+                    Uart_RecType  = CHECKSUM;
                 }
             } else if (Comm_Flag_2 == 1) {
                 if (++Uart_RecCycle >= 20) //163)
                 {
                     Uart_RecCycle = 0;
-                    Uart_RecType = CHECKSUM;
+                    Uart_RecType  = CHECKSUM;
                 }
             } else if ((Comm_Flag_4 == 1) || (1 == Comm_Flag_5)) {
                 if (++Uart_RecCycle >= (TwoAsciiToHex(Uart_Buffer1[9], Uart_Buffer1[10]) - 16)) //164)//163)161//156
                 {
                     Uart_RecCycle = 0;
-                    Uart_RecType = CHECKSUM;
+                    Uart_RecType  = CHECKSUM;
                 }
             } else if (1 == Comm_Flag_3) {
                 /*    if(Buffer == 0x7E)
@@ -169,7 +171,7 @@ void Uart_ReceiveIQR(uint8_t Buffer) {
                 if (++Uart_RecCycle >= SN_Len) //163)
                 {
                     Uart_RecCycle = 0;
-                    Uart_RecType = CHECKSUM;
+                    Uart_RecType  = CHECKSUM;
                 }
             }
             break;
@@ -204,16 +206,18 @@ void Uart_ReceiveIQR(uint8_t Buffer) {
                     if (!Uart_TxIndex) {
                         //Uart_RecOK = 1;
                         //Uart_RecType = SOI;
-                        for (i = 0; i < Uart_RX_BuffLen; i++) { Uart_Buffer[i] = Uart_Buffer1[i]; }
+                        for (i = 0; i < Uart_RX_BuffLen; i++) {
+                            Uart_Buffer[i] = Uart_Buffer1[i];
+                        }
                     }
                 }
-                Uart_RecType = 0;
+                Uart_RecType  = 0;
                 Uart_RecCount = 0;
             }
             break;
         default:
             Uart_RecCount = 0;
-            Uart_RecType = 0;
+            Uart_RecType  = 0;
             Uart_RecCycle = 0;
 
             break;
@@ -246,16 +250,18 @@ void Uart_TansmitIQR(void) {
 void Uart_RequestData(void) {
     if (!Timer[DATA_SAMPLE_TIMER].Flag) return;
     Set_Timer(DATA_SAMPLE_TIMER, 40);
-    if (++Uart_ERROR > 5) {
-        Uart_ERROR = 0;
-        PackData_Init();
+    if (sleep_flag == 0) {
+        if (++uart_error_flag > UART_ERROR_TIME_10MS) {
+            uart_error_flag = 0;
+            PackData_Init();
+        }
     }
-    Uart_TxCount = 1;
+    Uart_TxCount     = 1;
     Uart_TxBuffer[0] = 0x01;
-    Uart_TxIndex = 0;
-    Comm_Flag_1 = 1;
-    Comm_Flag_2 = 0;
-    Comm_Flag_3 = 0;
+    Uart_TxIndex     = 0;
+    Comm_Flag_1      = 1;
+    Comm_Flag_2      = 0;
+    Comm_Flag_3      = 0;
     //USART_ITConfig(USART1, USART_IT_TXE, ENABLE);
 }
 //======================================================================
@@ -265,16 +271,18 @@ void Uart_RequestData(void) {
 void Uart_RequestData_2(void) {
     if (!Timer[DATA_SAMPLE_TIMER_2].Flag) return;
     Set_Timer(DATA_SAMPLE_TIMER_2, 45);
-    if (++Uart_ERROR > 5) {
-        Uart_ERROR = 0;
-        PackData_Init();
+    if (sleep_flag == 0) {
+        if (++uart_error_flag > UART_ERROR_TIME_10MS) {
+            uart_error_flag = 0;
+            PackData_Init();
+        }
     }
-    Uart_TxCount = 1;
+    Uart_TxCount     = 1;
     Uart_TxBuffer[0] = 0x02;
-    Uart_TxIndex = 0;
-    Comm_Flag_1 = 0;
-    Comm_Flag_2 = 1;
-    Comm_Flag_3 = 0;
+    Uart_TxIndex     = 0;
+    Comm_Flag_1      = 0;
+    Comm_Flag_2      = 1;
+    Comm_Flag_3      = 0;
     //USART_ITConfig(USART1, USART_IT_TXE, ENABLE);
 }
 
@@ -384,33 +392,33 @@ void Uart_ConvertData(void) {
     uint8_t Data_1 = 0, Data_2 = 0;
     uint16_t Current_Data1 = 0, Current_Data2 = 0;
 
-    Index = 27;
-    Data_1 = TwoAsciiToHex(Uart_Buffer[Index], Uart_Buffer[Index + 1]); //总电压
-    Data_2 = TwoAsciiToHex(Uart_Buffer[Index + 2], Uart_Buffer[Index + 3]);
+    Index         = 27;
+    Data_1        = TwoAsciiToHex(Uart_Buffer[Index], Uart_Buffer[Index + 1]); //总电压
+    Data_2        = TwoAsciiToHex(Uart_Buffer[Index + 2], Uart_Buffer[Index + 3]);
     PackData.Vsum = (Data_1 << 8) | Data_2;
     PackData.Vsum = PackData.Vsum * 2;
     Index += 4;
 
-    Data_1 = TwoAsciiToHex(Uart_Buffer[Index], Uart_Buffer[Index + 1]); //充电电流
-    Data_2 = TwoAsciiToHex(Uart_Buffer[Index + 2], Uart_Buffer[Index + 3]);
+    Data_1        = TwoAsciiToHex(Uart_Buffer[Index], Uart_Buffer[Index + 1]); //充电电流
+    Data_2        = TwoAsciiToHex(Uart_Buffer[Index + 2], Uart_Buffer[Index + 3]);
     Current_Data1 = (Data_1 << 8) | Data_2;
     Index += 4;
 
-    Data_1 = TwoAsciiToHex(Uart_Buffer[Index], Uart_Buffer[Index + 1]); //放电电流
-    Data_2 = TwoAsciiToHex(Uart_Buffer[Index + 2], Uart_Buffer[Index + 3]);
+    Data_1        = TwoAsciiToHex(Uart_Buffer[Index], Uart_Buffer[Index + 1]); //放电电流
+    Data_2        = TwoAsciiToHex(Uart_Buffer[Index + 2], Uart_Buffer[Index + 3]);
     Current_Data2 = (Data_1 << 8) | Data_2;
     Index += 4;
 
     if (Current_Data1 > 0) //充放电只能显示一个
     {
         PackData.Current = Current_Data1;
-        Dis_Charge_Flag = 1;
+        Dis_Charge_Flag  = 1;
     } else if (Current_Data2 > 0) {
         PackData.Current = Current_Data2;
-        Dis_Charge_Flag = 2;
+        Dis_Charge_Flag  = 2;
     } else {
         PackData.Current = 0;
-        Dis_Charge_Flag = 0;
+        Dis_Charge_Flag  = 0;
     }
     if ((Current_Data1 == 0) && (Current_Data2 == 0)) {
         //PackData.Current=0;
@@ -421,22 +429,22 @@ void Uart_ConvertData(void) {
     Index += 4;
     //Index += 2;
 
-    Data_1 = TwoAsciiToHex(Uart_Buffer[Index], Uart_Buffer[Index + 1]); //剩余容量
-    Data_2 = TwoAsciiToHex(Uart_Buffer[Index + 2], Uart_Buffer[Index + 3]);
+    Data_1      = TwoAsciiToHex(Uart_Buffer[Index], Uart_Buffer[Index + 1]); //剩余容量
+    Data_2      = TwoAsciiToHex(Uart_Buffer[Index + 2], Uart_Buffer[Index + 3]);
     PackData.Rm = (Data_1 << 8) | Data_2;
     PackData.Rm = PackData.Rm * 10;
     Index += 4;
 
-    Data_1 = TwoAsciiToHex(Uart_Buffer[Index], Uart_Buffer[Index + 1]); //满充容量
-    Data_2 = TwoAsciiToHex(Uart_Buffer[Index + 2], Uart_Buffer[Index + 3]);
+    Data_1       = TwoAsciiToHex(Uart_Buffer[Index], Uart_Buffer[Index + 1]); //满充容量
+    Data_2       = TwoAsciiToHex(Uart_Buffer[Index + 2], Uart_Buffer[Index + 3]);
     PackData.Fcc = (Data_1 << 8) | Data_2;
     PackData.Fcc = PackData.Fcc * 10;
     Index += 4;
 
     PackData.DesignCap = PackData.Fcc;
 
-    Data_1 = TwoAsciiToHex(Uart_Buffer[Index], Uart_Buffer[Index + 1]); //循环次数
-    Data_2 = TwoAsciiToHex(Uart_Buffer[Index + 2], Uart_Buffer[Index + 3]);
+    Data_1         = TwoAsciiToHex(Uart_Buffer[Index], Uart_Buffer[Index + 1]); //循环次数
+    Data_2         = TwoAsciiToHex(Uart_Buffer[Index + 2], Uart_Buffer[Index + 3]);
     PackData.Cycle = (Data_1 << 8) | Data_2;
     Index += 8;
 
@@ -455,32 +463,34 @@ void Uart_ConvertData(void) {
     for (i = 0; i < PackData.TempNum; i++) //实际值
     {
         PackData.Temp[i] = TwoAsciiToHex(Uart_Buffer[Index], Uart_Buffer[Index + 1]);
-        if (PackData.Temp[i] == 189) { PackData.Temp[i] = 0; }
+        if (PackData.Temp[i] == 189) {
+            PackData.Temp[i] = 0;
+        }
         Index += 2;
     }
 
-    Data_1 = TwoAsciiToHex(Uart_Buffer[Index], Uart_Buffer[Index + 1]); //״̬��1
-    Data_2 = TwoAsciiToHex(Uart_Buffer[Index + 2], Uart_Buffer[Index + 3]);
+    Data_1           = TwoAsciiToHex(Uart_Buffer[Index], Uart_Buffer[Index + 1]); //״̬��1
+    Data_2           = TwoAsciiToHex(Uart_Buffer[Index + 2], Uart_Buffer[Index + 3]);
     PackData.Status1 = (Data_1 << 8) | Data_2;
     Index += 4;
 
-    Data_1 = TwoAsciiToHex(Uart_Buffer[Index], Uart_Buffer[Index + 1]); //״̬��2
-    Data_2 = TwoAsciiToHex(Uart_Buffer[Index + 2], Uart_Buffer[Index + 3]);
+    Data_1           = TwoAsciiToHex(Uart_Buffer[Index], Uart_Buffer[Index + 1]); //״̬��2
+    Data_2           = TwoAsciiToHex(Uart_Buffer[Index + 2], Uart_Buffer[Index + 3]);
     PackData.Status2 = (Data_1 << 8) | Data_2;
     Index += 4;
 
-    Data_1 = TwoAsciiToHex(Uart_Buffer[Index], Uart_Buffer[Index + 1]); //״̬��5
-    Data_2 = TwoAsciiToHex(Uart_Buffer[Index + 2], Uart_Buffer[Index + 3]);
+    Data_1           = TwoAsciiToHex(Uart_Buffer[Index], Uart_Buffer[Index + 1]); //״̬��5
+    Data_2           = TwoAsciiToHex(Uart_Buffer[Index + 2], Uart_Buffer[Index + 3]);
     PackData.Status5 = (Data_1 << 8) | Data_2;
     Index += 4;
 
-    Data_1 = TwoAsciiToHex(Uart_Buffer[Index], Uart_Buffer[Index + 1]); //������1
-    Data_2 = TwoAsciiToHex(Uart_Buffer[Index + 2], Uart_Buffer[Index + 3]);
+    Data_1            = TwoAsciiToHex(Uart_Buffer[Index], Uart_Buffer[Index + 1]); //������1
+    Data_2            = TwoAsciiToHex(Uart_Buffer[Index + 2], Uart_Buffer[Index + 3]);
     PackData.Warning1 = (Data_1 << 8) | Data_2;
     Index += 4;
 
-    Data_1 = TwoAsciiToHex(Uart_Buffer[Index], Uart_Buffer[Index + 1]); //������2
-    Data_2 = TwoAsciiToHex(Uart_Buffer[Index + 2], Uart_Buffer[Index + 3]);
+    Data_1            = TwoAsciiToHex(Uart_Buffer[Index], Uart_Buffer[Index + 1]); //������2
+    Data_2            = TwoAsciiToHex(Uart_Buffer[Index + 2], Uart_Buffer[Index + 3]);
     PackData.Warning2 = (Data_1 << 8) | Data_2;
 
     getValidData = 1;
@@ -492,29 +502,29 @@ void Uart_ConvertData_2(void) {
     uint8_t Index;
     uint8_t Data_1 = 0, Data_2 = 0;
 
-    Index = 11;
-    Data_1 = TwoAsciiToHex(Uart_Buffer[Index], Uart_Buffer[Index + 1]);
-    Data_2 = TwoAsciiToHex(Uart_Buffer[Index + 2], Uart_Buffer[Index + 3]); //过充次数
+    Index                 = 11;
+    Data_1                = TwoAsciiToHex(Uart_Buffer[Index], Uart_Buffer[Index + 1]);
+    Data_2                = TwoAsciiToHex(Uart_Buffer[Index + 2], Uart_Buffer[Index + 3]); //过充次数
     Record.Over_Chg_Count = (Data_1 << 8) | Data_2;
 
     Index += 4;
-    Data_1 = TwoAsciiToHex(Uart_Buffer[Index], Uart_Buffer[Index + 1]);
-    Data_2 = TwoAsciiToHex(Uart_Buffer[Index + 2], Uart_Buffer[Index + 3]); //过放次数
+    Data_1                 = TwoAsciiToHex(Uart_Buffer[Index], Uart_Buffer[Index + 1]);
+    Data_2                 = TwoAsciiToHex(Uart_Buffer[Index + 2], Uart_Buffer[Index + 3]); //过放次数
     Record.Over_Dchg_Count = (Data_1 << 8) | Data_2;
 
     Index += 4;
-    Data_1 = TwoAsciiToHex(Uart_Buffer[Index], Uart_Buffer[Index + 1]);
-    Data_2 = TwoAsciiToHex(Uart_Buffer[Index + 2], Uart_Buffer[Index + 3]); //过流次数
+    Data_1                 = TwoAsciiToHex(Uart_Buffer[Index], Uart_Buffer[Index + 1]);
+    Data_2                 = TwoAsciiToHex(Uart_Buffer[Index + 2], Uart_Buffer[Index + 3]); //过流次数
     Record.Over_Curr_Count = (Data_1 << 8) | Data_2;
 
     Index += 4;
-    Data_1 = TwoAsciiToHex(Uart_Buffer[Index], Uart_Buffer[Index + 1]);
-    Data_2 = TwoAsciiToHex(Uart_Buffer[Index + 2], Uart_Buffer[Index + 3]); //过温
+    Data_1                 = TwoAsciiToHex(Uart_Buffer[Index], Uart_Buffer[Index + 1]);
+    Data_2                 = TwoAsciiToHex(Uart_Buffer[Index + 2], Uart_Buffer[Index + 3]); //过温
     Record.Over_Temp_Count = (Data_1 << 8) | Data_2;
 
     Index += 4;
-    Data_1 = TwoAsciiToHex(Uart_Buffer[Index], Uart_Buffer[Index + 1]);
-    Data_2 = TwoAsciiToHex(Uart_Buffer[Index + 2], Uart_Buffer[Index + 3]); //短路次数
+    Data_1             = TwoAsciiToHex(Uart_Buffer[Index], Uart_Buffer[Index + 1]);
+    Data_2             = TwoAsciiToHex(Uart_Buffer[Index + 2], Uart_Buffer[Index + 3]); //短路次数
     Record.Short_Count = (Data_1 << 8) | Data_2;
 
     Uart_BuffClean();
@@ -540,7 +550,7 @@ void Uart_DataRespond(void) {
     //uint8_t Rtc;
     uint8_t CRC_1, CRC_2;
     uint8_t u8Len = 0;
-    u8Len = TwoAsciiToHex(Uart_Buffer[9], Uart_Buffer[10]);
+    u8Len         = TwoAsciiToHex(Uart_Buffer[9], Uart_Buffer[10]);
 
     if ((Uart_RecOK == 1) && (Comm_Flag_1 == 1)) {
         Uart_RecOK = 0;
@@ -551,7 +561,9 @@ void Uart_DataRespond(void) {
         //           CRC_2 = TwoAsciiToHex(Uart_Buffer[u8Len-3], Uart_Buffer[u8Len-2]);
         //           CRC_3 = (CRC_1<<8)|CRC_2;
         //   if(Key_Flag==0)
-        if (New_Page_Status == PAGE_WELCOME) { Page_Welcome_1(); }
+        if (New_Page_Status == PAGE_WELCOME) {
+            Page_Welcome_1();
+        }
         //           Time_Buffer[2] = Uart_Buffer[13];
         //           Time_Buffer[3] = Uart_Buffer[14];
         //           Time_Buffer[4] = Uart_Buffer[15];
@@ -566,8 +578,12 @@ void Uart_DataRespond(void) {
         //           if(g_CRC!=CRC_3) return;
         //
         //        Uart_ConvertData();
-        Uart_ERROR = 0;
+        uart_error_flag = 0;
+        // APP_PRINT("%s, %d\n", __func__, uart_error_flag)
+        // return;
     }
+    // APP_PRINT(".");
+    // return;
 }
 
 //======================================================================
@@ -577,19 +593,23 @@ void Uart_DataRespond(void) {
 void Uart_DataRespond_2(void) {
     uint8_t CRC_1, CRC_2;
     if ((Uart_RecOK == 1) && (Comm_Flag_2 == 1)) {
-        Uart_RecOK = 0;
+        Uart_RecOK  = 0;
         Comm_Flag_1 = 0;
         Comm_Flag_2 = 0;
-        g_CRC = GetCRC16CheckCode(Uart_Buffer + 1, 30, 0xa001);
-        CRC_1 = TwoAsciiToHex(Uart_Buffer[31], Uart_Buffer[32]);
-        CRC_2 = TwoAsciiToHex(Uart_Buffer[33], Uart_Buffer[34]);
-        CRC_3 = (CRC_1 << 8) | CRC_2;
+        g_CRC       = GetCRC16CheckCode(Uart_Buffer + 1, 30, 0xa001);
+        CRC_1       = TwoAsciiToHex(Uart_Buffer[31], Uart_Buffer[32]);
+        CRC_2       = TwoAsciiToHex(Uart_Buffer[33], Uart_Buffer[34]);
+        CRC_3       = (CRC_1 << 8) | CRC_2;
 
         if (g_CRC != CRC_3) return;
 
         Uart_ConvertData_2();
-        Uart_ERROR = 0;
+        uart_error_flag = 0;
+        // APP_PRINT("%s, %d\n", __func__, uart_error_flag)
+        // return;
     }
+    // APP_PRINT(".");
+    // return;
 }
 
 /*******************************************************************************
@@ -600,7 +620,7 @@ void Uart_DataRespond_4(void) {
     uint8_t CRC_1, CRC_2;
 
     if ((Uart_RecOK == 1) && (Comm_Flag_4 == 1)) {
-        Uart_RecOK = 0;
+        Uart_RecOK  = 0;
         Comm_Flag_4 = 0;
 
         g_CRC = GetCRC16CheckCode(Uart_Buffer + 1, 30, 0xa001);
@@ -613,7 +633,7 @@ void Uart_DataRespond_4(void) {
         if ('0' == Uart_Buffer[11]) X_axisFlag_COM = 0;
         if ('1' == Uart_Buffer[11]) X_axisFlag_COM = 1;
         //    X_axisFlag_COM = Uart_Buffer[11];
-        Uart_ERROR = 0;
+        uart_error_flag = 0;
     }
 }
 
@@ -625,7 +645,7 @@ void Uart_DataRespond_5(void) {
     uint8_t CRC_1, CRC_2;
 
     if ((Uart_RecOK == 1) && (Comm_Flag_5 == 1)) {
-        Uart_RecOK = 0;
+        Uart_RecOK  = 0;
         Comm_Flag_5 = 0;
 
         g_CRC = GetCRC16CheckCode(Uart_Buffer + 1, 30, 0xa001);
@@ -637,7 +657,7 @@ void Uart_DataRespond_5(void) {
         //      return;
         if ('0' == Uart_Buffer[11]) PlaceFlag_COM = 0;
         if ('1' == Uart_Buffer[11]) PlaceFlag_COM = 1;
-        Uart_ERROR = 0;
+        uart_error_flag = 0;
     }
 }
 
@@ -648,21 +668,22 @@ void Uart_DataRespond_5(void) {
 void UartInit(void) {
     Uart_TxIndex = 0; //Usart当前发送序号
     Uart_TxCount = 0; //Usart计数
-    Uart_RecOK = 0;   //Usart接收完成标志
+    Uart_RecOK   = 0; //Usart接收完成标志
     //Dis_Charge_Flag=0;
-    Uart_ERROR = 0;
-    CRC_3 = 0;
-    g_CRC = 0;
+    uart_error_flag = 0;
+    sleep_flag      = 0;
+    CRC_3           = 0;
+    g_CRC           = 0;
 
-    Comm_Flag_1 = 0;
-    Comm_Flag_2 = 0;
-    Comm_Flag_3 = 0;
-    Comm_Flag_4 = 0;
-    Comm_Flag_5 = 0;
-    PlaceFlag_COM = 0;
+    Comm_Flag_1    = 0;
+    Comm_Flag_2    = 0;
+    Comm_Flag_3    = 0;
+    Comm_Flag_4    = 0;
+    Comm_Flag_5    = 0;
+    PlaceFlag_COM  = 0;
     X_axisFlag_COM = 0;
     SetCommondFlag = 0;
-    Key_Flag = 0;
+    Key_Flag       = 0;
 }
 
 //======================================================================

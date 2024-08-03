@@ -11,16 +11,17 @@
 #define __UART_COMM_H
 #include "stm32g0xx_hal.h"
 
-#define Uart_RX_BuffLen     1000
+#define Uart_RX_BuffLen 1000
 extern uint8_t Dis_Charge_Flag;
-extern uint8_t Uart_Buffer[]; 
+extern uint8_t Uart_Buffer[];
 extern uint8_t PlaceFlag_COM;
 extern uint8_t X_axisFlag_COM;
 extern uint8_t SetCommondFlag;
 extern uint8_t PlaceFlag;
 extern uint8_t X_axisFlag;
 extern uint8_t Comm_Flag_1, Comm_Flag_2, Comm_Flag_3;
-extern uint8_t Uart_RecCount;
+extern uint8_t sleep_flag;
+extern uint16_t uart_error_flag;
 /*函数声明*/
 void Uart_ReceiveIQR(uint8_t Buffer);
 void Uart_TansmitIQR(void);

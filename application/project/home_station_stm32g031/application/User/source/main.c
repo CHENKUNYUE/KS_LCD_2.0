@@ -38,6 +38,41 @@ comm_struct protocol_com = {1, {0}, {0}, 1, 0x05, 0XFF, 0, 0, 0, 0, 0, 0, 01, 0,
 extern void IWDG_Feed();
 extern void IWDG_Config(uint8_t SetReload);
 
+static void request_handler(void) {
+    if (Timer[SAMP_TIME].Flag) {
+        Reset_Timer(SAMP_TIME);
+        Set_Timer(SAMP_TIME, 40); //  80
+        if (0 == SetCommondFlag) {
+            Flag++;
+            Comm_Flag = 1;
+        } else
+            Comm_Flag = 0;
+    }
+
+    if ((Flag == 1) && (Comm_Flag == 1)) {
+        Uart_RequestData();
+        Comm_Flag = 0;
+    } else if ((Flag == 2) && (Comm_Flag == 1)) {
+        Uart_RequestData_2();
+        //   Flag=0;
+        Comm_Flag = 0;
+    } else if ((Flag >= 3) && (Comm_Flag == 1)) {
+        //Uart_RequestData_3();
+        Flag      = 0;
+        Comm_Flag = 0;
+    }
+}
+
+static void response_handler(void) {
+    if (Timer[SAMP_TIME_2].Flag) {
+        Reset_Timer(SAMP_TIME_2);
+        Set_Timer(SAMP_TIME_2, 40); //  80
+        Uart_DataRespond();
+        Uart_DataRespond_2();
+        //Uart_DataRespond_3();
+    }
+}
+
 int main(void) {
     static uint8_t disp_cnt = 0;
     static uint8_t set_can  = 0;
@@ -119,32 +154,10 @@ int main(void) {
                 }
             }
         }
-        if (Timer[SAMP_TIME].Flag) {
-            Reset_Timer(SAMP_TIME);
-            Set_Timer(SAMP_TIME, 40); //  80
-            if (0 == SetCommondFlag) {
-                Flag++;
-                Comm_Flag = 1;
-            } else
-                Comm_Flag = 0;
-        }
 
-        if ((Flag == 1) && (Comm_Flag == 1)) {
-            Uart_RequestData();
-            Comm_Flag = 0;
-        } else if ((Flag == 2) && (Comm_Flag == 1)) {
-            Uart_RequestData_2();
-            //   Flag=0;
-            Comm_Flag = 0;
-        } else if ((Flag >= 3) && (Comm_Flag == 1)) {
-            //Uart_RequestData_3();
-            Flag      = 0;
-            Comm_Flag = 0;
-        }
+        request_handler();
+        response_handler();
 
-        Uart_DataRespond();
-        Uart_DataRespond_2();
-        //Uart_DataRespond_3();
         Key_Scan();
         if (Sleep_Active == 0) Show_Ctrl();
         Sleep_Ctrl();

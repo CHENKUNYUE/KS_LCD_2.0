@@ -1,17 +1,18 @@
 
 
-
-Breakpoint=/Users/gongjian/Documents/projects/CLionProjects/baseline/main_fcc/stm32g031g8/application/project/home_station_stm32g031/application/protocal_1363/source/p_1363_52_frame.c:27, State=BP_STATE_ON
+OpenDocument="startup_stm32g031xx.s", FilePath="/Users/gongjian/Documents/projects/CLionProjects/baseline/main_fcc/stm32g031g8/startup/startup_stm32g031xx.s", Line=36
+OpenDocument="SEGGER_RTT_printf.c", FilePath="/Users/gongjian/Documents/projects/CLionProjects/baseline/main_fcc/stm32g031g8/libraries/SEGGER_RTT/SEGGER_RTT_printf.c", Line=409
+OpenDocument="stm32g0xx_hal_gpio.c", FilePath="/Users/gongjian/Documents/projects/CLionProjects/baseline/main_fcc/stm32g031g8/Drivers/STM32G0xx_HAL_Driver/Src/stm32g0xx_hal_gpio.c", Line=389
 OpenDocument="p_1363_52_frame.c", FilePath="/Users/gongjian/Documents/projects/CLionProjects/baseline/main_fcc/stm32g031g8/application/project/home_station_stm32g031/application/protocal_1363/source/p_1363_52_frame.c", Line=0
-OpenDocument="main.c", FilePath="/Users/gongjian/Documents/projects/CLionProjects/baseline/main_fcc/stm32g031g8/application/project/home_station_stm32g031/application/User/source/main.c", Line=0
+OpenDocument="main.c", FilePath="/Users/gongjian/Documents/projects/CLionProjects/baseline/main_fcc/stm32g031g8/application/project/home_station_stm32g031/application/User/source/main.c", Line=56
 OpenToolbar="View", Floating=0, x=1, y=0
 OpenToolbar="Debug", Floating=0, x=0, y=0
-OpenWindow="Call Stack", DockArea=RIGHT, x=0, y=1, w=1532, h=675, TabPos=2, TopOfStack=0, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
-OpenWindow="Disassembly", DockArea=RIGHT, x=0, y=0, w=1532, h=288, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
-OpenWindow="Local Data", DockArea=RIGHT, x=0, y=1, w=1532, h=675, TabPos=3, TopOfStack=0, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
-OpenWindow="Watched Data 1", DockArea=RIGHT, x=0, y=1, w=1532, h=675, TabPos=0, TopOfStack=0, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
-OpenWindow="Terminal", DockArea=RIGHT, x=0, y=1, w=1532, h=675, TabPos=1, TopOfStack=1, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
-OpenWindow="Find Results", DockArea=RIGHT, x=0, y=2, w=1532, h=283, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Call Stack", DockArea=RIGHT, x=0, y=1, w=1532, h=640, TabPos=2, TopOfStack=0, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Disassembly", DockArea=RIGHT, x=0, y=0, w=1532, h=305, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Local Data", DockArea=RIGHT, x=0, y=1, w=1532, h=640, TabPos=3, TopOfStack=0, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Watched Data 1", DockArea=RIGHT, x=0, y=1, w=1532, h=640, TabPos=0, TopOfStack=0, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Terminal", DockArea=RIGHT, x=0, y=1, w=1532, h=640, TabPos=1, TopOfStack=1, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
+OpenWindow="Find Results", DockArea=RIGHT, x=0, y=2, w=1532, h=301, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
 SmartViewPlugin="", Page="", Toolbar="Hidden", Window="SmartView 1"
 TableHeader="Local Data", SortCol="Name", SortOrder="ASCENDING", VisibleCols=["Name";"Value";"Location";"Size";"Type";"Scope"], ColWidths=[260;304;79;50;176;663]
 TableHeader="Call Stack", SortCol="Function", SortOrder="ASCENDING", VisibleCols=["Function";"Stack Frame";"Source";"PC";"Return Address";"Stack Used"], ColWidths=[227;150;140;100;126;789]

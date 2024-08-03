@@ -16,6 +16,7 @@
 #include "LCD_12864.h"
 #include "Uart_Comm.h"
 #include "User_Conf.h"
+#include "bms_rt_info.h"
 #include "common_utils.h"
 #include "p_1363_B0_frame.h"
 #include "paras.h"
@@ -29,7 +30,7 @@
 #define ROW_SECOND 2
 #define ROW_THREE 4
 #define ROW_LAST 6
-#define PROTOCOL_EN_ALL 0
+#define PROTOCOL_EN_ALL 0 // 是否显示全部协议 1：是，0：否
 //--------------------------全局变量------------------------------------
 uint8_t New_Page_Status     = 0; // 需要切换的新页面
 uint8_t Old_Page_Status     = 0; // 当前页面
@@ -1046,6 +1047,11 @@ void choose_clear() {
 }
 
 void choose_row(uint8_t index, uint8_t row_addr) {
+    BMS_RT_INFO_T *p_bms = bms_get_rt_info();
+    if (p_bms->bms_addr != 0) {
+        // 只有0 才可以通过屏幕修改协议
+        return;
+    }
     for (int i = 0; i < PROTOCOL_ARR_LENGTH; ++i) {
         if (protocol_arr[i].protocol_page == index && protocol_arr[i].protocol_row == (row_addr * 2)) {
             if (protocol_arr[i].index > E_CAN_MAX_NUM) {

@@ -44,6 +44,8 @@ void PackData_Init(void) {
     for (i = 0; i < 10; i++) {
         PackData.Temp[i] = 0;
     }
+    Soc = 0;
+    SOH = 0;
 
     PackData.Current  = 0;
     PackData.Vsum     = 0;
@@ -121,8 +123,9 @@ void Wake_Ready(void) {
 
 void Wake_Up(void) {
     BL_EN; //
+    sleep_flag = 0;
     PackData_Init();
-    //     Page_Welcome();
+    // Page_Welcome();
     Page_Welcome_new();
     New_Page_Status = 0;
     Old_Page_Status = 0;
@@ -136,6 +139,9 @@ void Wake_Up(void) {
 //Description:  休眠
 //======================================================================
 void Sleep_Ctrl(void) {
+    sleep_flag = 0;
+    uart_error_flag = 0;
+
     if (!Timer[IDLE_TIMER].Flag && !Sleep_Active) return;
     Reset_Timer(IDLE_TIMER);
     Sleep_Active = 1;

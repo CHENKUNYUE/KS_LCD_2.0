@@ -63,6 +63,7 @@ extern "C" {
 #define CU_LIMIT_CURRENT              (C_LIMIT_OFF) // ALWAYS_10A_ON C_LIMIT_OFF
 
 #define LED_OFF_TIME_S  45
+#define UART_ERROR_TIME_10MS 50
 #define OFF_LINE_TIME_S 10
 #define USART_BAUD_RATE 19200
 
