@@ -748,11 +748,14 @@ void Page_BMS_Version(void) {
  * KS-V2.0.2:满充容量
  * KS-V2.0.4:剩余容量
  * KS-V2.1.1:更改首页电流显示三位后面不清空问题,剩余容量
- * KS-V2.1.3:更改首页电流显示三位后面不清空问题,满充容量,增加协议选择
+ * KS-V2.1.3:更改首页为满充容量,增加协议选择
+ * KS-V2.1.4:更改首页为剩余容量,增加协议选择
+ * KS-V2.1.5:更改首页为剩余容量,协议选择-考虑自动分配地址
+ * KS-V2.1.6:更改首页为满充容量,协议选择-考虑自动分配地址
  *******************************************************************************/
 void Page_LCD_Version(void) {
-    Lcd_showStringEN(ROW_FIRST, 0 * 8, "LCD SW Version: ", 0); // 主板协议回复不在判断cid1
-    Lcd_showStringEN(ROW_SECOND, 0 * 8, " KS-V2.1.3", 0);
+   Lcd_showStringEN(ROW_FIRST, 0 * 8, "LCD SW Version: ", 0); // 主板协议回复不在判断cid1
+   Lcd_showStringEN(ROW_SECOND, 0 * 8, " KS-V2.1.6", 0);
     Lcd_showStringEN(ROW_THREE, 0 * 8, "LCD HW Version: ", 0);
     Lcd_showStringEN(ROW_LAST, 0 * 8, " KS-LCD-02-V1", 0);
 }
@@ -1048,8 +1051,9 @@ void choose_clear() {
 
 void choose_row(uint8_t index, uint8_t row_addr) {
     BMS_RT_INFO_T *p_bms = bms_get_rt_info();
-    if (p_bms->bms_addr != 0) {
+    if (p_bms->bms_addr != 0 && p_bms->bms_addr != 1) {
         // 只有0 才可以通过屏幕修改协议
+        // + 地址1 自动分配地址 add 2024年10月29日11:13:56
         return;
     }
     for (int i = 0; i < PROTOCOL_ARR_LENGTH; ++i) {
