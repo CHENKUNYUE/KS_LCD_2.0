@@ -323,8 +323,8 @@ void Page_Welcome_new(void) {
         Lcd_showChar(0, 13 * 8, (uint8_t) ((Soc / 10) % 10) + '0', 0);
     Lcd_showChar(0, 14 * 8, (uint8_t) (Soc % 10) + '0', 0);
 
-    Lcd_showChar(6, 3 * 8, 'A', 0); // show "A"
-    Lcd_showChar(6, 4 * 8, 'H', 0); // show "A"
+    // Lcd_showChar(6, 3 * 8, 'A', 0); // show "A"
+    // Lcd_showChar(6, 4 * 8, 'H', 0); // show "A"
 #if 0
     if (PackData.Rm >= 10000) {     // 剩余容量
     Lcd_showChar(6, 0 * 8, (uint8_t)(PackData.Rm / 10000) + '0', 0);
@@ -339,17 +339,17 @@ void Page_Welcome_new(void) {
     Lcd_showChar(6, 2 * 8, (uint8_t)((PackData.Rm / 100) % 10) + '0', 0);
 
 #endif
-    if (PackData.Fcc >= 10000) { // 满充容量
-        Lcd_showChar(6, 0 * 8, (uint8_t) (PackData.Fcc / 10000) + '0', 0);
-        Lcd_showChar(6, 1 * 8, (uint8_t) ((PackData.Fcc / 1000) % 10) + '0', 0);
-    } else if (PackData.Fcc >= 1000) {
-        Lcd_showChar(6, 0 * 8, ' ', 0);
-        Lcd_showChar(6, 1 * 8, (uint8_t) (PackData.Fcc / 1000) + '0', 0);
-    } else {
-        Lcd_showChar(6, 0 * 8, ' ', 0);
-        Lcd_showChar(6, 1 * 8, ' ', 0);
-    }
-    Lcd_showChar(6, 2 * 8, (uint8_t) ((PackData.Fcc / 100) % 10) + '0', 0);
+    // if (PackData.Fcc >= 10000) { // 满充容量
+    //     Lcd_showChar(6, 0 * 8, (uint8_t) (PackData.Fcc / 10000) + '0', 0);
+    //     Lcd_showChar(6, 1 * 8, (uint8_t) ((PackData.Fcc / 1000) % 10) + '0', 0);
+    // } else if (PackData.Fcc >= 1000) {
+    //     Lcd_showChar(6, 0 * 8, ' ', 0);
+    //     Lcd_showChar(6, 1 * 8, (uint8_t) (PackData.Fcc / 1000) + '0', 0);
+    // } else {
+    //     Lcd_showChar(6, 0 * 8, ' ', 0);
+    //     Lcd_showChar(6, 1 * 8, ' ', 0);
+    // }
+    // Lcd_showChar(6, 2 * 8, (uint8_t) ((PackData.Fcc / 100) % 10) + '0', 0);
     // 保护状态
     if (PackData.Prp_State.BitName.bCellVoltOV) {
         Lcd_showChar(6, 13 * 8, 'O', 0);
@@ -624,9 +624,9 @@ void Page_Voltage_4(void) {
 //======================================================================
 void Page_Capacity(void) {
     Lcd_showStringEN(ROW_FIRST, 0 * 8, "   SOC    :        %", 0);
-    Lcd_showStringEN(ROW_SECOND, 0 * 8, "Nominal   :        AH", 0);
-    Lcd_showStringEN(ROW_THREE, 0 * 8, "Remain    :        AH", 0);
-    Lcd_showStringEN(ROW_LAST, 0 * 8, "BMS Cycles:         0", 0);
+    // Lcd_showStringEN(ROW_SECOND, 0 * 8, "Nominal   :        AH", 0);
+    // Lcd_showStringEN(ROW_THREE, 0 * 8, "Remain    :        AH", 0);//
+    Lcd_showStringEN(ROW_SECOND, 0 * 8, "BMS Cycles:         0", 0);
 }
 
 //======================================================================
@@ -752,10 +752,11 @@ void Page_BMS_Version(void) {
  * KS-V2.1.4:更改首页为剩余容量,增加协议选择
  * KS-V2.1.5:更改首页为剩余容量,协议选择-考虑自动分配地址
  * KS-V2.1.6:更改首页为满充容量,协议选择-考虑自动分配地址
+ * KS-V2.1.7:更改首页为满充容量,协议选择-考虑自动分配地址
  *******************************************************************************/
 void Page_LCD_Version(void) {
    Lcd_showStringEN(ROW_FIRST, 0 * 8, "LCD SW Version: ", 0); // 主板协议回复不在判断cid1
-   Lcd_showStringEN(ROW_SECOND, 0 * 8, " KS-V2.1.6", 0);
+   Lcd_showStringEN(ROW_SECOND, 0 * 8, " KS-V2.1.8", 0);
     Lcd_showStringEN(ROW_THREE, 0 * 8, "LCD HW Version: ", 0);
     Lcd_showStringEN(ROW_LAST, 0 * 8, " KS-LCD-02-V1", 0);
 }
@@ -1002,7 +1003,7 @@ void page_rs485_protocol_4(void) {
  *******************************************************************************/
 void page_can_protocol_1(void) {
     Show_SelectCh(SelectCH_Line_Index);
-    Lcd_showStringEN(ROW_FIRST, 2 * 8, "CAN Victon      ", 0);
+    Lcd_showStringEN(ROW_FIRST, 2 * 8, "CAN Victorn     ", 0);
     Lcd_showStringEN(ROW_SECOND, 2 * 8, "CAN Pylon       ", 0);
     Lcd_showStringEN(ROW_THREE, 2 * 8, "CAN Growatt     ", 0);
     Lcd_showStringEN(ROW_LAST, 2 * 8, "CAN LXP         ", 0);
@@ -2524,35 +2525,35 @@ void Page_Digital_Show(void) {
                 Lcd_showChar6_8(0, 12 * 8, (uint8_t) ((Soc / 10) % 10) + '0', 0);
             Lcd_showChar6_8(0, 13 * 8, (uint8_t) (Soc % 10) + '0', 0);
 
-            if (PackData.Fcc >= 10000) { // 总容量
-                Lcd_showChar6_8(2, 9 * 8, (uint8_t) (PackData.Fcc / 10000) + '0', 0);
-                Lcd_showChar6_8(2, 10 * 8, (uint8_t) ((PackData.Fcc / 1000) % 10) + '0', 0);
-            } else if (PackData.Fcc >= 1000) {
-                Lcd_showChar6_8(2, 9 * 8, ' ', 0);
-                Lcd_showChar6_8(2, 10 * 8, (uint8_t) (PackData.Fcc / 1000) + '0', 0);
-            } else {
-                Lcd_showChar6_8(2, 9 * 8, ' ', 0);
-                Lcd_showChar6_8(2, 10 * 8, ' ', 0);
-            }
-            Lcd_showChar6_8(2, 11 * 8, (uint8_t) ((PackData.Fcc / 100) % 10) + '0', 0);
-            Lcd_showChar6_8(2, 12 * 8, '.', 0);
-            Lcd_showChar6_8(2, 13 * 8, (uint8_t) ((PackData.Fcc / 10) % 10) + '0', 0);
+            // if (PackData.Fcc >= 10000) { // 总容量
+            //     Lcd_showChar6_8(2, 9 * 8, (uint8_t) (PackData.Fcc / 10000) + '0', 0);
+            //     Lcd_showChar6_8(2, 10 * 8, (uint8_t) ((PackData.Fcc / 1000) % 10) + '0', 0);
+            // } else if (PackData.Fcc >= 1000) {
+            //     Lcd_showChar6_8(2, 9 * 8, ' ', 0);
+            //     Lcd_showChar6_8(2, 10 * 8, (uint8_t) (PackData.Fcc / 1000) + '0', 0);
+            // } else {
+            //     Lcd_showChar6_8(2, 9 * 8, ' ', 0);
+            //     Lcd_showChar6_8(2, 10 * 8, ' ', 0);
+            // }
+            // Lcd_showChar6_8(2, 11 * 8, (uint8_t) ((PackData.Fcc / 100) % 10) + '0', 0);
+            // Lcd_showChar6_8(2, 12 * 8, '.', 0);
+            // Lcd_showChar6_8(2, 13 * 8, (uint8_t) ((PackData.Fcc / 10) % 10) + '0', 0);
 
-            if (PackData.Rm >= 10000) { // 剩余容量
-                Lcd_showChar6_8(4, 9 * 8, (uint8_t) (PackData.Rm / 10000) + '0', 0);
-                Lcd_showChar6_8(4, 10 * 8, (uint8_t) ((PackData.Rm / 1000) % 10) + '0', 0);
-            } else if (PackData.Rm >= 1000) {
-                Lcd_showChar6_8(4, 9 * 8, ' ', 0);
-                Lcd_showChar6_8(4, 10 * 8, (uint8_t) (PackData.Rm / 1000) + '0', 0);
-            } else {
-                Lcd_showChar6_8(4, 9 * 8, ' ', 0);
-                Lcd_showChar6_8(4, 10 * 8, ' ', 0);
-            }
-            Lcd_showChar6_8(4, 11 * 8, (uint8_t) ((PackData.Rm / 100) % 10) + '0', 0);
-            Lcd_showChar6_8(4, 12 * 8, '.', 0);
-            Lcd_showChar6_8(4, 13 * 8, (uint8_t) ((PackData.Rm / 10) % 10) + '0', 0);
+            // if (PackData.Rm >= 10000) { // 剩余容量
+            //     Lcd_showChar6_8(4, 9 * 8, (uint8_t) (PackData.Rm / 10000) + '0', 0);
+            //     Lcd_showChar6_8(4, 10 * 8, (uint8_t) ((PackData.Rm / 1000) % 10) + '0', 0);//
+            // } else if (PackData.Rm >= 1000) {
+            //     Lcd_showChar6_8(4, 9 * 8, ' ', 0);
+            //     Lcd_showChar6_8(4, 10 * 8, (uint8_t) (PackData.Rm / 1000) + '0', 0);
+            // } else {
+            //     Lcd_showChar6_8(4, 9 * 8, ' ', 0);
+            //     Lcd_showChar6_8(4, 10 * 8, ' ', 0);
+            // }
+            // Lcd_showChar6_8(4, 11 * 8, (uint8_t) ((PackData.Rm / 100) % 10) + '0', 0);
+            // Lcd_showChar6_8(4, 12 * 8, '.', 0);
+            // Lcd_showChar6_8(4, 13 * 8, (uint8_t) ((PackData.Rm / 10) % 10) + '0', 0);
 
-            Show_Data_4Bit(6, 12 * 8, PackData.Cycle); // 循环次数
+            Show_Data_4Bit(2, 12 * 8, PackData.Cycle); // 循环次数
             break;
 
             /*告警状态*/
