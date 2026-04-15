@@ -231,7 +231,7 @@ void Page_Welcome_new(void) {
     // extern const uint8_t Battery_Icon_SOC_0_30x16[60];
     const uint8_t *battery_icon = Battery_Icon_SOC_0_30x16;
 
-    // Soc = 100;
+     Soc = 100;
 
     /* 清空整个屏幕 */
     for(j = 0; j < 8; j++) {
