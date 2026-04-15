@@ -22,12 +22,12 @@ void OnProjectLoad (void) {
   //
   // Dialog-generated settings
   //
-  Project.AddPathSubstitute ("/Users/KS_project/G031_LCD/KS_LCD_2.0_3E/platform/Clion/STM32g031/stm32g031.jdebug", "$(ProjectDir)");
-  Project.AddPathSubstitute ("/Users/KS_project/G031_LCD/KS_LCD_2.0_3E/platform/Clion/STM32g031/stm32g031.jdebug", "$(ProjectDir)");
   Project.SetDevice ("STM32G031G8");
-  Project.SetHostIF ("USB", "");
+  Project.SetHostIF ("USB", "601012352");
   Project.SetTargetIF ("SWD");
   Project.SetTIFSpeed ("4 MHz");
+  Project.AddPathSubstitute ("/Users/KS_project/G031_LCD/KS_LCD_2.0_3E/platform/Clion/STM32g031/stm32g031.jdebug", "$(ProjectDir)");
+  Project.AddPathSubstitute ("/Users/KS_project/G031_LCD/KS_LCD_2.0_3E/platform/Clion/STM32g031/stm32g031.jdebug", "$(ProjectDir)");
   Project.AddSvdFile ("$(InstallDir)/Config/CPU/Cortex-M0.svd");
   //
   // User settings

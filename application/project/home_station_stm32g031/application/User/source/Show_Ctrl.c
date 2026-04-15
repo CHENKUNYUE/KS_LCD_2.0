@@ -173,207 +173,227 @@ void Page_Welcome_1(void) {
 //======================================================================
 void Show_TemperatureNull(uint8_t Row) { Lcd_showStringEN(Row, 9 * 8, "  -- ", 0); }
 
-#define enlen_1 (0)
+// ... existing code ...
+
+
+// void Page_Welcome_new(void) {
+//     uint8_t i, j;
+//     const uint8_t *battery_icon = Battery_Icon_SOC_0_24x16;
+//
+//     /* 清空整个屏幕 */
+//     for(j = 0; j < 8; j++) {
+//         for(i = 0; i < 21; i++) {
+//             Lcd_showCha6_7(j, i * 6, ' ', 1);
+//         }
+//     }
+//
+//     /* 第 0 行：BMS Status 标题 (居中) */
+//     Lcd_showStringEN(0, 34, "BMS Status", 0);
+//
+//     /* 左侧SOC大数字 + 百分号 */
+//     if (((Soc / 10) % 10) == 0) {
+//         Lcd_showChar(2, 0, ' ', 0);
+//     } else {
+//         Lcd_showChar(2, 0, (uint8_t) ((Soc / 10) % 10) + '0', 0);
+//     }
+//     Lcd_showChar(2, 8, (uint8_t) (Soc % 10) + '0', 0);
+//     Lcd_showChar(2, 20, '%', 0);
+//
+//     /* 左侧电池图标：每格25% */
+//     if (Soc >= 100) {
+//         battery_icon = Battery_Icon_SOC_100_24x16;
+//     } else if (Soc >= 75) {
+//         battery_icon = Battery_Icon_SOC_75_24x16;
+//     } else if (Soc >= 50) {
+//         battery_icon = Battery_Icon_SOC_50_24x16;
+//     } else if (Soc >= 25) {
+//         battery_icon = Battery_Icon_SOC_25_24x16;
+//     } else {
+//         battery_icon = Battery_Icon_SOC_0_24x16;
+//     }
+//     Display_Custom_Bitmap_8x16(2, 30, 24, battery_icon);
+//
+//     /* 右上总压框（闪电图标 + 预留电压显示区） */
+//     Display_Custom_Bitmap_8x16(1, 60, 64, Right_Frame_Lightning_64x16);
+//
+//     /* 总压/电流：6x8 字体，只占框下半行，比左侧 SOC 的 8x16 更矮更小；列不超出屏宽 */
+//     Show_TotalVoltage(2, 76, PackData.Vsum);
+//     Lcd_showChar6_8(2, 118, 'V', 0);
+//
+//     /* 右下电流框（小图标 + 电流值区域） */
+//     Display_Custom_Bitmap_8x16(4, 60, 64, Right_Frame_Current_64x16);
+//     Show_Current(4, 68, PackData.Current);
+//     Lcd_showChar6_8(4, 118, 'A', 0);
+// }
+
 void Page_Welcome_new(void) {
-    // 第一种大图
-#if enlen_1 == 1
-    // 电池
-    //     Lcd_showStringENG(2, 2 * 6, "  ", 0);
-    Lcd_showStringENG(2, 1 * 8, "1", 0); // 电池—+
-    Lcd_showStringENG(2, 2 * 7, "2", 0); // 电池—+
+    uint8_t i, j;
+    // extern const uint8_t Battery_Icon_SOC_0_30x16[60];
+    const uint8_t *battery_icon = Battery_Icon_SOC_0_30x16;
 
-    Lcd_showStringENG(2, 4 * 7, "1", 0);
-    Lcd_showStringENG(2, 5 * 7, "2", 0);
-    //    Lcd_showStringENG(2, 2 * 8, "2", 0);
-    //    Lcd_showChar(3, 8 * 8, '#', 0); //show "电芯温度"
-    Lcd_showChar(3, 0 * 8, '~', 0); // 空白8*16右半边
-    Lcd_showChar(3, 1 * 8, '}', 0); // 空白8*16
-    Lcd_showChar(3, 2 * 8, '}', 0); // 空白8*16
-    Lcd_showChar(3, 3 * 8, '}', 0); // 空白8*16
-    Lcd_showChar(3, 4 * 8, '}', 0); // 空白8*16
-    Lcd_showChar(3, 5 * 8, '}', 0); // 空白8*16
+    // Soc = 100;
 
-    Lcd_showChar(4, 0 * 8, '~', 0); // 空白8*16
-    Lcd_showChar(4, 1 * 8, '}', 0); // 空白8*16右半边
-    Lcd_showChar(4, 2 * 8, '}', 0); // 空白8*16
-    Lcd_showChar(4, 3 * 8, '}', 0); // 空白8*16
-    Lcd_showChar(4, 4 * 8, '}', 0); // 空白8*16
-    Lcd_showChar(4, 5 * 8, '}', 0); // 空白8*16
-
-    // 逆变器上
-    Lcd_showChar(3, 15 * 8, '[', 0); // 逆变器右边
-    //    Lcd_showChar(3, 10 * 8, '}', 0);//空白8*16
-    Lcd_showChar(3, 11 * 8, ';', 1); // 空白8*16
-    Lcd_showChar(3, 12 * 8, ';', 1); // 空白8*16
-    Lcd_showChar(3, 13 * 8, ';', 1); // 空白8*16
-    Lcd_showChar(3, 14 * 8, ';', 1); // 空白8*16
-
-    // 下
-    Lcd_showChar(4, 15 * 8, '{', 0); // 空白8*16半边
-    Lcd_showChar(4, 11 * 8, ':', 1); // 空白8*16右半边
-    Lcd_showChar(4, 12 * 8, ':', 1); // 空白8*16
-    Lcd_showChar(4, 13 * 8, '?', 1); // 逆变器框框
-    Lcd_showChar(4, 14 * 8, '@', 1); // 逆变器框框
-    //    Lcd_showChar(4, 5 * 8, '}', 0);//空白8*16
-
-    Lcd_showStringENG(2, 14 * 6, "5", 0);
-    Lcd_showStringENG(2, 15 * 6, "3", 0);
-    Lcd_showStringENG(2, 16 * 6, "3", 0);
-    Lcd_showStringENG(2, 17 * 6, "3", 0);
-    Lcd_showStringENG(2, 18 * 6, "3", 0);
-    Lcd_showStringENG(2, 19 * 6, "3", 0);
-    Lcd_showStringENG(2, 20 * 6, "4", 0);
-
-    Lcd_showStringENG(3, 8 * 6, ":", 0);       // 箭头线
-    Lcd_showStringENG(3, 9 * 6, ":", 0);       // 箭头线
-    Lcd_showStringENG(3, 10 * 6, ":", 0);      // 箭头线
-    Lcd_showStringENG(3, 11 * 6, ":", 0);      // 箭头线
-    Lcd_showStringENG(3, 12 * 6, ";", 0);      // 箭头
-    Lcd_showStringENG(3, 13 * 6, ":", 0);      // 箭头线
-    Show_Current1(4, 4 * 8, PackData.Current); // 72
-
-#else
-    Lcd_showStringENG(2, 1 * 3, "(", 0); // 电池—+左
-    Lcd_showStringENG(2, 2 * 4, ")", 0); // 电池—+
-
-    Lcd_showStringENG(2, 26 * 1, "(", 0);
-    Lcd_showStringENG(2, 8 * 4, ")", 0);
-    //    Lcd_showStringENG(2, 2 * 8, "2", 0);
-    //    Lcd_showChar(3, 8 * 8, '#', 0); //show "电芯温度"
-    Lcd_showChar(3, 0 * 8, '(', 0); // 空白8*16
-    Lcd_showChar(3, 1 * 8, ')', 0); // 空白8*16
-    Lcd_showChar(3, 2 * 8, '}', 0); // 空白8*16
-    Lcd_showChar(3, 3 * 8, '+', 0); // 空白8*16
-    Lcd_showChar(3, 4 * 8, '*', 0); // 空白8*16右半边
-    //    Lcd_showChar(3, 5 * 8, '}', 0);//空白8*16
-
-    Lcd_showChar(4, 0 * 8, '<', 0); // 空白8*16右半边
-    Lcd_showChar(4, 1 * 8, '<', 0); // 空白8*16
-    Lcd_showChar(4, 2 * 8, '<', 0); // 空白8*16
-    Lcd_showChar(4, 3 * 8, '<', 0); // 空白8*16
-    Lcd_showChar(4, 4 * 8, '<', 0); // 空白8*16
-    //    Lcd_showChar(4, 5 * 8, '}', 0);//空白8*16
-
-    // 逆变器上
-    //     Lcd_showChar(3, 10 * 8, '}', 0);//空白8*16
-    //     Lcd_showChar(3, 11 * 8, ';', 1);//空白8*16
-    Lcd_showChar(3, 12 * 8, '!', 0); // 空白8*16
-    Lcd_showChar(3, 13 * 8, ';', 1); // 空白8*16
-    Lcd_showChar(3, 14 * 8, ';', 1); // 空白8*16
-    Lcd_showChar(3, 15 * 8, '[', 0); // 逆变器右边
-
-    // 下
-
-    //    Lcd_showChar(4, 11 * 8, ':', 1);//空白8*16右半边
-    Lcd_showChar(4, 12 * 8, '"', 0); // 空白8*16
-    Lcd_showChar(4, 13 * 8, ':', 1); // 空白8*16
-    Lcd_showChar(4, 14 * 8, '?', 1); // 逆变器框框
-    Lcd_showChar(4, 15 * 8, '@', 1); // 逆变器框框
-    //    Lcd_showChar(4, 15 * 8, '{', 0);//空白8*16半边
-
-    Lcd_showStringENG(2, 16 * 6, "0", 0);
-    Lcd_showStringENG(2, 17 * 6, "3", 0);
-    Lcd_showStringENG(2, 18 * 6, "3", 0);
-    Lcd_showStringENG(2, 19 * 6, "3", 0);
-    Lcd_showStringENG(2, 20 * 6, "3", 0);
-    Lcd_showStringENG(2, 21 * 6, "3", 0);
-
-    if (PackData.Current == 0) {
-        Lcd_showStringENG(3, 11 * 6, ":", 0); // 箭头线
-        Lcd_showChar(4, 5 * 8, ' ', 0);
-        Lcd_showChar(4, 6 * 8, ' ', 0);
-        Lcd_showChar(4, 7 * 8, ' ', 0);
-        Lcd_showChar(4, 8 * 8, '-', 0);
-        Lcd_showChar(4, 9 * 8, '-', 0);
-        Lcd_showChar(4, 10 * 8, '-', 0);
-
-    } else if ((PackData.Current > 0)) {           // 300A
-        Show_Current1(4, 5 * 8, PackData.Current); // 72
-        Lcd_showStringENG(3, 11 * 6, "<", 0);      // 充电箭头
-    } else if (PackData.Current < 0) {
-        Show_Current1(4, 5 * 8, PackData.Current); // 72
-        Lcd_showStringENG(3, 11 * 6, ";", 0);      // 放电箭头
+    /* 清空整个屏幕 */
+    for(j = 0; j < 8; j++) {
+        for(i = 0; i < 21; i++) {
+            Lcd_showCha6_7(j, i * 6, ' ', 1);
+        }
     }
-    Lcd_showChar(4, 11 * 8, 'A', 0);      // show "A"
-    Lcd_showStringENG(3, 7 * 6, ":", 0);  // 箭头线
-    Lcd_showStringENG(3, 8 * 6, ":", 0);  // 箭头线
-    Lcd_showStringENG(3, 9 * 6, ":", 0);  // 箭头线
-    Lcd_showStringENG(3, 10 * 6, ":", 0); // 箭头线
-    Lcd_showStringENG(3, 12 * 6, ":", 0); //
-    Lcd_showStringENG(3, 13 * 6, ":", 0); // 箭头线
-    Lcd_showStringENG(3, 14 * 6, ":", 0); // 箭头线
-    Lcd_showStringENG(3, 15 * 6, ":", 0); // 箭头线
 
-#endif
+    /* 第 0 行：BMS Status 标题 (居中) */
+    Lcd_showStringEN(0, 34, "BMS Status", 0);
 
-    // #if 0
-    // 总压
-    Show_TotalVoltage1(0, 0 * 8, (PackData.Vsum));
-    Lcd_showChar(0, 4 * 8, 'V', 0); // show "A"
-
-    // SOC 最后一行前面
-    Lcd_showChar(0, 15 * 8, '%', 0);
-
-    if (((Soc / 100) % 10) == 0) Lcd_showChar6_8(0, 12 * 8, ' ', 0); // SOC
-    else
-        Lcd_showChar(0, 12 * 8, (uint8_t) ((Soc / 100) % 10) + '0', 0);
-
-    if ((((Soc / 10) % 10) == 0) && (((Soc / 100) % 10) == 0)) Lcd_showChar6_8(0, 13 * 8, ' ', 0);
-    else
-        Lcd_showChar(0, 13 * 8, (uint8_t) ((Soc / 10) % 10) + '0', 0);
-    Lcd_showChar(0, 14 * 8, (uint8_t) (Soc % 10) + '0', 0);
-
-    // Lcd_showChar(6, 3 * 8, 'A', 0); // show "A"
-    // Lcd_showChar(6, 4 * 8, 'H', 0); // show "A"
-#if 0
-    if (PackData.Rm >= 10000) {     // 剩余容量
-    Lcd_showChar(6, 0 * 8, (uint8_t)(PackData.Rm / 10000) + '0', 0);
-    Lcd_showChar(6, 1 * 8, (uint8_t)((PackData.Rm / 1000) % 10) + '0', 0);
-    } else if (PackData.Rm >= 1000) {
-    Lcd_showChar(6, 0 * 8, ' ', 0);
-    Lcd_showChar(6, 1 * 8, (uint8_t)(PackData.Rm / 1000) + '0', 0);
+    /* 左侧SOC大数字 + 百分号 */
+    if (Soc >= 100) {
+        // 100% 的情况
+        Lcd_showChar_Shift4(1, 0, '1', 0);
+        Lcd_showChar_Shift4(1, 6, '0', 0);
+        Lcd_showChar_Shift4(1, 14, '0', 0);
+        // Lcd_showChar(3, 26, '%', 0);
     } else {
-    Lcd_showChar(6, 0 * 8, ' ', 0);
-    Lcd_showChar(6, 1 * 8, ' ', 0);
-    }
-    Lcd_showChar(6, 2 * 8, (uint8_t)((PackData.Rm / 100) % 10) + '0', 0);
+        // 低于 100% 的情况：显示两位数
+        if (((Soc / 10) % 10) == 0) {
+            Lcd_showChar_Shift4(1, 2, ' ', 0);
+        } else {
+            Lcd_showChar_Shift4(1, 2, (uint8_t) ((Soc / 10) % 10) + '0', 0);
+        }
+        Lcd_showChar_Shift4(1, 12, (uint8_t) (Soc % 10) + '0', 0);
 
-#endif
-    // if (PackData.Fcc >= 10000) { // 满充容量
-    //     Lcd_showChar(6, 0 * 8, (uint8_t) (PackData.Fcc / 10000) + '0', 0);
-    //     Lcd_showChar(6, 1 * 8, (uint8_t) ((PackData.Fcc / 1000) % 10) + '0', 0);
-    // } else if (PackData.Fcc >= 1000) {
-    //     Lcd_showChar(6, 0 * 8, ' ', 0);
-    //     Lcd_showChar(6, 1 * 8, (uint8_t) (PackData.Fcc / 1000) + '0', 0);
-    // } else {
-    //     Lcd_showChar(6, 0 * 8, ' ', 0);
-    //     Lcd_showChar(6, 1 * 8, ' ', 0);
+    }
+    Lcd_showChar_Shift4(1, 23, '%', 0);
+    // 1. 选择电池图标
+    if (Soc >= 100) {
+        battery_icon = Battery_Icon_SOC_100_30x16;
+    } else if (Soc >= 75) {
+        battery_icon = Battery_Icon_SOC_75_30x16;
+    } else if (Soc >= 50) {
+        battery_icon = Battery_Icon_SOC_50_30x16;
+    } else if (Soc >= 25) {
+        battery_icon = Battery_Icon_SOC_25_30x16;
+    } else {
+        battery_icon = Battery_Icon_SOC_0_30x16;
+    }
+
+    // 2. 显示位移 4 像素后的电池图标 (起始 Row 1 + 4px = Centered in Box)
+    Display_Custom_Bitmap_8x16_Shift4(1, 30, 30, battery_icon);
+    
+    /* 右上总压框（闪电图标 + 预留电压显示区） */
+    Display_Custom_Bitmap_8x24(1, 60, 64, Right_Frame_Lightning_64x24);
+
+    /* 总压/电流：6x8 字体，只占框下半行，比左侧 SOC 的 8x16 更矮更小；列不超出屏宽 */
+    Show_TotalVoltage(2, 76, PackData.Vsum);
+    Lcd_showChar6_8(2, 116, 'V', 0);
+
+    /* 右下电流框（小图标 + 电流值区域） */
+    Display_Custom_Bitmap_8x24(4, 60, 64, Right_Frame_Current_64x24);
+    Show_Current(5, 78, PackData.Current); // 起始位置进一步右移，防止负号重叠图标
+    Lcd_showChar6_8(5, 116, 'A', 0); // 单位靠右
+
+    /* ====== 底部反白状态栏 (12像素高度) ====== */
+    // 1. 铺满底部黑条背景 (Page 6 底部 4 像素 + Page 7 全满 8 像素)
+    // Lcd12864_Addr(6, 4); // 定位到 Page 6
+    // for(i = 0; i < 128; i++) {
+    //     LcdSend_Data(0xC0); // 填充 Page 6 底部的 2 像素
     // }
-    // Lcd_showChar(6, 2 * 8, (uint8_t) ((PackData.Fcc / 100) % 10) + '0', 0);
-    // 保护状态
-    if (PackData.Prp_State.BitName.bCellVoltOV) {
-        Lcd_showChar(6, 13 * 8, 'O', 0);
-        Lcd_showChar(6, 14 * 8, 'V', 0);
-    } else if (PackData.Prp_State.BitName.bCellVoltUL) {
-        Lcd_showChar(6, 13 * 8, 'L', 0);
-        Lcd_showChar(6, 14 * 8, 'V', 0);
-    } else if (PackData.Prp_State.BitName.bTempOV) {
-        Lcd_showChar(6, 13 * 8, 'O', 0);
-        Lcd_showChar(6, 14 * 8, 'T', 0);
-    } else if (PackData.Prp_State.BitName.bTempUL) {
-        Lcd_showChar(6, 13 * 8, 'L', 0);
-        Lcd_showChar(6, 14 * 8, 'T', 0);
-    } else if (PackData.Prp_State.BitName.bCurrOV) {
-        Lcd_showChar(6, 13 * 8, 'O', 0);
-        Lcd_showChar(6, 14 * 8, 'C', 0);
-    } else if (PackData.Prp_State.BitName.bShortFault) {
-        Lcd_showChar(6, 13 * 8, 'S', 0);
-        Lcd_showChar(6, 14 * 8, 'C', 0);
-    } else {
-        Lcd_showChar(6, 13 * 8, '-', 0);
-        Lcd_showChar(6, 14 * 8, '-', 0);
+    // Lcd12864_Addr(7, 0); // 定位到第 7 页（最底部），第 0 列
+    // for(i = 0; i < 128; i++) {
+    //     LcdSend_Data(0xFF); // 写入 128 个字节的 0x00
+    // }
+    // for(i = 0; i < 21; i++) {
+    //     Lcd_showStringEN(7, i * 6, " ", 1);
+    // }
+    // Lcd_showStringEN(7, 122, " ", 1);
+
+    // 2. 最左边缩进4像素并打印 "TEMP "
+    Lcd_showStringEN(7, 0, "TEMP:", 0);
+
+    /* 显示电芯平均温度 BAT_TEMP */
+    {
+        int16_t t_avg = PackData.BAT_TEMP;
+        uint8_t temp_col = 28; //  "TEMP:"与温度的起始间距
+
+        if (t_avg < 0) {
+            Lcd_showChar6_8(7, temp_col, '-', 0);
+            temp_col += 4;
+            t_avg = -t_avg;
+        }
+        // 显示百位数 (例如 >= 100.0)
+        if (t_avg >= 1000) {
+            Lcd_showChar6_8(7, temp_col, (t_avg/1000)%10 + '0', 0);
+            temp_col += 6;
+        }
+        // 显示十位数 (例如 >= 10.0)
+        if (t_avg >= 100) {
+            Lcd_showChar6_8(7, temp_col, (t_avg/100)%10 + '0', 0);
+            temp_col += 6;
+        }
+        // 显示个位数 (始终显示)
+        Lcd_showChar6_8(7, temp_col, (t_avg/10)%10 + '0', 0);
+        temp_col += 6;
+        
+        // 显示小数点
+        Lcd_showChar6_8(7, temp_col, '.', 0);
+        temp_col += 6;
+        // 显示小数位
+        Lcd_showChar6_8(7, temp_col, t_avg%10 + '0', 0);
+        temp_col += 6;
+        
+        // 打印摄氏度符号 _ 为度数, C
+        Lcd_showChar6_8(7, temp_col, '_', 0);
+        temp_col += 6;
+        Lcd_showChar6_8(7, temp_col, 'C', 0);
     }
+
+    // 3. 往右调整并显示 "Status:" (或者将其缩短)，给左边的小数点留出显示空间
+    Lcd_showStringEN(7, 74, "Stat:", 0);
+
+    //告警状态：优先级 SC > OV > UV > OT > UT > OC > NG
+    // {
+    //     const char *warn_code = "   "; // 3个空格，清除残影
+    //     if      (PackData.Prp_State.BitName.bShortFault) { warn_code = "SC"; }
+    //     else if (PackData.Prp_State.BitName.bCellVoltOV) { warn_code = "OV"; }
+    //     else if (PackData.Prp_State.BitName.bCellVoltUL) { warn_code = "UV"; }
+    //     else if (PackData.Prp_State.BitName.bTempOV)     { warn_code = "OT"; }
+    //     else if (PackData.Prp_State.BitName.bTempUL)     { warn_code = "UT"; }
+    //     else if (PackData.Prp_State.BitName.bCurrOV)     { warn_code = "OC"; }
+    //     else if (PackData.Prp_State.BitName.bNeg)        { warn_code = "NG"; }
+    //
+    //     if (warn_code[0] != ' ') {
+    //         // 有保护状态：显示 "WARN XX"
+    //         Lcd_showStringEN(5, 0, "WARN ", 0);
+    //         Lcd_showStringEN(5, 30, warn_code, 0);
+    //     } else {
+    //         // 无保护状态：清空该行前段
+    //         Lcd_showStringEN(5, 0, "WARN ", 0);
+    //     }
+    // }
+
+    Lcd_showStringEN(5, 0, "WARN ", 0);  // 固定显示 WARN
+    {
+        const char *warn_code = "  ";  // 默认空白（2个字符清除）
+        if      (PackData.Prp_State.BitName.bShortFault) warn_code = "SC";
+        else if (PackData.Prp_State.BitName.bCellVoltOV) warn_code = "OV";
+        else if (PackData.Prp_State.BitName.bCellVoltUL) warn_code = "UV";
+        else if (PackData.Prp_State.BitName.bTempOV)     warn_code = "OT";
+        else if (PackData.Prp_State.BitName.bTempUL)     warn_code = "UT";
+        else if (PackData.Prp_State.BitName.bCurrOV)     warn_code = "OC";
+        else if (PackData.Prp_State.BitName.bNeg)        warn_code = "NG";
+        Lcd_showStringEN(5, 30, warn_code, 0);  // 列偏移30px，紧跟WARN后
+    }
+
+
 }
+
+// ... existing code ...
+
+
+
+
+
+
+
+
+
 
 void Page_Welcome(void) {
     //  OLED_ShowBMP(0, 0, 128, 64, 0, 0); //图片
@@ -531,8 +551,8 @@ void Page_SystemSet(void) {
 
     Lcd_showStringEN(ROW_FIRST, 2 * 8, "BMS Version  ", 0);
     Lcd_showStringEN(ROW_SECOND, 2 * 8, "LCD Version  ", 0);
-    Lcd_showChar6_8(ROW_FIRST, 15 * 8, '<', 0);  // show "��"
-    Lcd_showChar6_8(ROW_SECOND, 15 * 8, '<', 0); // show "��"
+    Lcd_showChar6_8(ROW_FIRST, 15 * 8, '<', 0);  // show ""
+    Lcd_showChar6_8(ROW_SECOND, 15 * 8, '<', 0); // show ""
 }
 
 //======================================================================
@@ -558,10 +578,10 @@ void Page_Temperature_2(void) {
     Lcd_showStringEN(ROW_SECOND, 0 * 6, "--Temp06:      C", 0);
     Lcd_showStringEN(ROW_THREE, 0 * 6, "--Temp07:      C", 0);
     Lcd_showStringEN(ROW_LAST, 0 * 6, "--Temp08:      C", 0);
-    Lcd_showChar6_8(ROW_FIRST, 18 * 6, '_', 0);  // show "��C"
-    Lcd_showChar6_8(ROW_SECOND, 18 * 6, '_', 0); // show "��C"
-    Lcd_showChar6_8(ROW_THREE, 18 * 6, '_', 0);  // show "��C"
-    Lcd_showChar6_8(ROW_LAST, 18 * 6, '_', 0);   // show "��C"
+    Lcd_showChar6_8(ROW_FIRST, 18 * 6, '_', 0);  // show "C"
+    Lcd_showChar6_8(ROW_SECOND, 18 * 6, '_', 0); // show "C"
+    Lcd_showChar6_8(ROW_THREE, 18 * 6, '_', 0);  // show "C"
+    Lcd_showChar6_8(ROW_LAST, 18 * 6, '_', 0);   // show "C"
 }
 //======================================================================
 // Function:	Page_Temperature_3()
@@ -570,8 +590,8 @@ void Page_Temperature_2(void) {
 void Page_Temperature_3(void) {
     Lcd_showStringEN(ROW_FIRST, 0 * 6, "MOS Temp           C", 0); // PCB--> MOS
     Lcd_showStringEN(ROW_SECOND, 0 * 6, "Env Temp           C", 0);
-    Lcd_showChar6_8(ROW_FIRST, 18 * 6, '_', 0);  // show "��C"
-    Lcd_showChar6_8(ROW_SECOND, 18 * 6, '_', 0); // show "��C"
+    Lcd_showChar6_8(ROW_FIRST, 18 * 6, '_', 0);  // show "C"
+    Lcd_showChar6_8(ROW_SECOND, 18 * 6, '_', 0); // show "C"
 }
 
 //======================================================================
@@ -756,9 +776,9 @@ void Page_BMS_Version(void) {
  *******************************************************************************/
 void Page_LCD_Version(void) {
    Lcd_showStringEN(ROW_FIRST, 0 * 8, "LCD SW Version: ", 0); // 主板协议回复不在判断cid1
-   Lcd_showStringEN(ROW_SECOND, 0 * 8, " KS-V2.1.8", 0);
+   Lcd_showStringEN(ROW_SECOND, 0 * 8, " LG-V3.0.0", 0);
     Lcd_showStringEN(ROW_THREE, 0 * 8, "LCD HW Version: ", 0);
-    Lcd_showStringEN(ROW_LAST, 0 * 8, " KS-LCD-02-V1", 0);
+    Lcd_showStringEN(ROW_LAST, 0 * 8, " LG-LCD-03-V1", 0);
 }
 
 /*******************************************************************************
@@ -888,7 +908,7 @@ void GyroSet(void) {
  *******************************************************************************/
 void page_can_protocol_1(void) {
     Show_SelectCh(SelectCH_Line_Index);
-    Lcd_showStringEN(ROW_FIRST, 2 * 8, "CAN Victon      ", 0);
+    Lcd_showStringEN(ROW_FIRST, 2 * 8, "CAN Victron      ", 0);
     Lcd_showStringEN(ROW_SECOND, 2 * 8, "CAN Pylon       ", 0);
     Lcd_showStringEN(ROW_THREE, 2 * 8, "CAN Goodwe      ", 0);
     Lcd_showStringEN(ROW_LAST, 2 * 8, "CAN Growatt     ", 0);
@@ -2189,6 +2209,8 @@ void Show_Data_4Bit1(uint8_t Row, uint8_t Col, uint16_t Data) {
     }
 }
 
+void Display_Custom_Bitmap_8x24(uint8_t Row, uint8_t Col, uint8_t WidthBytes, const uint8_t *bitmap_data);
+void Display_SOC_12x20(uint8_t Row, uint8_t Col, uint8_t Index);
 //======================================================================
 // Function:	Show_Current()
 // Description:  子菜单显示电流
@@ -2198,7 +2220,8 @@ void Show_Current(uint8_t Row, uint8_t Col, int16_t Data) {
     uint8_t BaiWei, ShiWei, GeWei, Fen_10, Fen_100;
 
     Tmp = abs(Data);
-    Lcd_showChar6_8(Row, Col, ' ', 0);
+    // 方案一：屏蔽顶头的全宽占位擦除（保护左侧大图标！）
+    // Lcd_showChar6_8(Row, Col, ' ', 0);
     BaiWei  = 0;
     ShiWei  = 0;
     GeWei   = 0;
@@ -2250,11 +2273,12 @@ void Show_Current(uint8_t Row, uint8_t Col, int16_t Data) {
     Fen_10 += '0';
     Fen_100 += '0';
 
-    Lcd_showChar6_8(Row, Col + 8, BaiWei, 0);
-    Lcd_showChar6_8(Row, Col + 16, ShiWei, 0);
-    Lcd_showChar6_8(Row, Col + 24, GeWei, 0);
-    Lcd_showChar6_8(Row, Col + 32, '.', 0);
-    Lcd_showChar6_8(Row, Col + 40, Fen_10, 0);
+    // 优化间距：数字间距6px，小数点后间距 4px，
+    if (BaiWei != ' ') Lcd_showChar6_8(Row, Col + 7,  BaiWei, 0);
+    if (ShiWei != ' ') Lcd_showChar6_8(Row, Col + 12, ShiWei, 0);
+    Lcd_showChar6_8(Row, Col + 19, GeWei, 0);
+    Lcd_showChar6_8(Row, Col + 25, '.', 0);
+    Lcd_showChar6_8(Row, Col + 29, Fen_10, 0);
 }
 
 /*首页显示电流*/
@@ -2317,7 +2341,7 @@ void Show_Current1(uint8_t Row, uint8_t Col, int16_t Data) {
     Lcd_showChar(Row, Col + 8, BaiWei, 0);
     Lcd_showChar(Row, Col + 16, ShiWei, 0);
     Lcd_showChar(Row, Col + 24, GeWei, 0);
-    Lcd_showChar(4, Col + 32, '.', 0);
+    Lcd_showChar(Row, Col + 32, '.', 0);
     Lcd_showChar(Row, Col + 40, Fen_10, 0);
 }
 
@@ -2330,7 +2354,8 @@ void Show_TotalVoltage(uint8_t Row, uint8_t Col, uint16_t Data) {
         Lcd_showChar6_8(Row, Col + 0 * 8, (uint8_t) (Data / 10000) + '0', 0);
         Lcd_showChar6_8(Row, Col + 1 * 8, (uint8_t) ((Data / 1000) % 10) + '0', 0);
     } else {
-        Lcd_showChar6_8(Row, Col + 0 * 8, ' ', 0);
+        // 方案一：屏蔽最高位的空白字符强制覆写
+        // Lcd_showChar6_8(Row, Col + 0 * 8, ' ', 0);
         Lcd_showChar6_8(Row, Col + 1 * 8, (uint8_t) (Data / 1000) + '0', 0);
     }
     Lcd_showChar6_8(Row, Col + 2 * 8, '.', 0);
@@ -2347,7 +2372,7 @@ void Show_TotalVoltage1(uint8_t Row, uint8_t Col, uint16_t Data) {
         Lcd_showChar(Row, Col + 0 * 8, ' ', 0);
         Lcd_showChar(Row, Col + 1 * 8, (uint8_t) (Data / 1000) + '0', 0);
     }
-    Lcd_showCha6_7(1, Col + 2 * 8, '.', 0);
+    Lcd_showChar(Row, Col + 2 * 8, '.', 0);
     Lcd_showChar(Row, Col + 3 * 8, (uint8_t) ((Data / 100) % 10) + '0', 0);
     /*Lcd_showChar(Row, Col + 4 * 8, (uint8_t) ((Data / 10) % 10) + '0',
                  0); //后两位小数点*/

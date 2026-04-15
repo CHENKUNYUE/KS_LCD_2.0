@@ -48,7 +48,9 @@
 #define MAXCOLUMNCNT 	128
 
 
-/*��������*/
+/*函数声明*/
+void Lcd12864_Addr(uint8_t Row, uint8_t Col);
+void LcdSend_Data(uint8_t Data);
 void Clear_Screen(unsigned char data1,unsigned char data2);
 void Lcd_Close_Display(void);
 void Display_HanZi_16x16(uint8_t Row, uint8_t Col, uint8_t Reverse, uint8_t *dp, uint8_t Index);
@@ -67,6 +69,14 @@ void Lcd_showCha6_7(uint8_t rowaddr,uint8_t columnaddr,uint8_t uchar,uint8_t fb)
 void Lcd_showChar8_8(uint8_t rowaddr,uint8_t columnaddr,uint8_t uchar,uint8_t fb);
 void OLED_ShowBMP(uint8_t x, uint8_t y, uint8_t px, uint8_t py, uint8_t index, uint8_t mode);
 void Lcd_showChar6_16(uint8_t rowaddr,uint8_t columnaddr,uint8_t uchar,uint8_t fb);
+
+/* 新增：显示自定义图标函数 */
+void Display_Custom_Icon_8x8(uint8_t Row, uint8_t Col, const uint8_t *icon_data);
+void Display_Custom_Icon_8x16(uint8_t Row, uint8_t Col, const uint8_t *icon_data);
+void Display_Custom_Bitmap_8x16(uint8_t Row, uint8_t Col, uint8_t WidthBytes, const uint8_t *bitmap_data);
+void Display_Custom_Bitmap_8x24(uint8_t Row, uint8_t Col, uint8_t WidthBytes, const uint8_t *bitmap_data);
+void Lcd_showChar_Shift4(uint8_t Row, uint8_t Col, uint8_t uchar, uint8_t fb);
+void Display_Custom_Bitmap_8x16_Shift4(uint8_t Row, uint8_t Col, uint8_t Width, const uint8_t *data);
 
 
 extern const uint8_t ASCIITAB[];

@@ -170,7 +170,7 @@ void Lcd_showChar6_8(uint8_t Row, uint8_t Col, uint8_t uchar, uint8_t fb) {
         data4 = ShuZi6x8[index][i];
         if (1 == fb) {
             data4 = ~data4;
-            data4 |= 0x01;
+            //data4 |= 0x01;
             //          data4 |= 0x80;
         }
         LcdSend_Data(data4);
@@ -391,6 +391,161 @@ uint16_t Lcd_searchFontCode(uint16_t code2) {
         return 0;
     }
 }
+
+// ... existing code ...
+
+/*******************************************************************************
+*name:	      Display_Custom_Icon_8x8()
+*description: 显示自定义 8x8 图标
+*parameter:   Row, Col, icon_data(指向 8 字节数组的指针)
+*return:      None
+*******************************************************************************/
+void Display_Custom_Icon_8x8(uint8_t Row, uint8_t Col, const uint8_t *icon_data) {
+    uint8_t i;
+
+    if (Row >= MAXROWCNT || Col >= MAXCOLUMNCNT) return;
+
+    Lcd12864_Addr(Row, Col + 4);
+    for (i = 0; i < 8; i++) {
+        LcdSend_Data(icon_data[i]);
+    }
+}
+
+/*******************************************************************************
+*name:	      Display_Custom_Icon_8x16()
+*description: 显示自定义 8x16 图标
+*parameter:   Row, Col, icon_data(指向 16 字节数组的指针)
+*return:      None
+*******************************************************************************/
+void Display_Custom_Icon_8x16(uint8_t Row, uint8_t Col, const uint8_t *icon_data) {
+    uint8_t i, j;
+
+    if (Row >= (MAXROWCNT - 1) || Col >= MAXCOLUMNCNT) return;
+
+    for (j = 0; j < 2; j++) {
+        Lcd12864_Addr(Row + j, Col + 4);
+        for (i = 0; i < 8; i++) {
+            LcdSend_Data(icon_data[j * 8 + i]);
+        }
+    }
+}
+
+/*******************************************************************************
+*name:	      Display_Custom_Bitmap_8x16()
+*description: 显示自定义宽度 8x16 位图
+*parameter:   Row, Col, WidthBytes, bitmap_data(2*WidthBytes 字节)
+*return:      None
+*******************************************************************************/
+void Display_Custom_Bitmap_8x16(uint8_t Row, uint8_t Col, uint8_t WidthBytes, const uint8_t *bitmap_data) {
+    uint8_t i, j;
+
+    if (bitmap_data == 0) return;
+    if (WidthBytes == 0) return;
+    if (Row >= (MAXROWCNT - 1)) return;
+    /* 实际列 = Col + 4 起写 WidthBytes 列，末列须 < 128 */
+    if ((uint16_t) Col + 4u + (uint16_t) WidthBytes > (uint16_t) MAXCOLUMNCNT) return;
+
+    for (j = 0; j < 2; j++) {
+        Lcd12864_Addr(Row + j, Col + 4);
+        for (i = 0; i < WidthBytes; i++) {
+            LcdSend_Data(bitmap_data[j * WidthBytes + i]);
+        }
+    }
+}
+
+/*******************************************************************************
+*name:	      Display_Custom_Bitmap_8x24()
+*description: 显示自定义宽度 8x24 位图
+*parameter:   Row, Col, WidthBytes, bitmap_data(3*WidthBytes 字节)
+*return:      None
+*******************************************************************************/
+
+void Display_Custom_Bitmap_8x24(uint8_t Row, uint8_t Col, uint8_t WidthBytes, const uint8_t *bitmap_data) {
+    uint8_t i, j;
+
+    if (bitmap_data == 0) return;
+    if (WidthBytes == 0) return;
+    if (Row >= (MAXROWCNT - 2)) return;
+    /* 实际列 = Col + 4 起写 WidthBytes 列，末列须 < 128 */
+    if ((uint16_t) Col + 4u + (uint16_t) WidthBytes > (uint16_t) MAXCOLUMNCNT) return;
+
+    for (j = 0; j < 3; j++) {
+        Lcd12864_Addr(Row + j, Col + 4);
+        for (i = 0; i < WidthBytes; i++) {
+            LcdSend_Data(bitmap_data[j * WidthBytes + i]);
+        }
+    }
+}
+
+/*******************************************************************************
+*name:	      Lcd_showChar_Shift4()
+*description: 显示偏移 4 像素的 8x16 字符（跨越 3 个 Page）
+*parameter:   Row(起始页), Col, uchar, fb(反显)
+*return:      None
+*******************************************************************************/
+void Lcd_showChar_Shift4(uint8_t Row, uint8_t Col, uint8_t uchar, uint8_t fb) {
+    uint8_t i = 0, j = 0;
+    uint8_t src_data[16];
+    uint8_t out_data[3][8] = {0};
+    uint16_t index = 0;
+
+    if (Row >= (MAXROWCNT - 2) || Col >= MAXCOLUMNCNT) return;
+    if (uchar & 0x80) return;
+    index = (uchar - ' ') * 16;
+
+    // 加载原始 16 像素高字符数据
+    for (i = 0; i < 16; i++) {
+        src_data[i] = ASCIITAB[index + i];
+        if (1 == fb) src_data[i] = ~src_data[i];
+    }
+
+    // 4 像素向下位移逻辑 (Bit 0 为最高位)
+    for (i = 0; i < 8; i++) {
+        out_data[0][i] = (src_data[i] << 4);
+        out_data[1][i] = (src_data[i] >> 4) | (src_data[i + 8] << 4);
+        out_data[2][i] = (src_data[i + 8] >> 4);
+    }
+
+    // 绘制到连续的 3 个 Page
+    for (j = 0; j < 3; j++) {
+        Lcd12864_Addr(Row + j, Col + 4);
+        for (i = 0; i < 8; i++) {
+            LcdSend_Data(out_data[j][i]);
+        }
+    }
+}
+
+/*******************************************************************************
+*name:	      Display_Custom_Bitmap_8x16_Shift4()
+*description: 显示偏移 4 像素的自定义宽度 16 高位图（跨越 3 个 Page）
+*parameter:   Row(起始页), Col, Width, data(指向位图数据的指针)
+*return:      None
+*******************************************************************************/
+void Display_Custom_Bitmap_8x16_Shift4(uint8_t Row, uint8_t Col, uint8_t Width, const uint8_t *data) {
+    uint8_t i, j;
+    uint8_t out_byte;
+
+    if (data == 0 || Width == 0) return;
+    if (Row >= (MAXROWCNT - 2)) return;
+    if ((uint16_t) Col + 4u + (uint16_t) Width > (uint16_t) MAXCOLUMNCNT) return;
+
+    for (j = 0; j < 3; j++) {
+        Lcd12864_Addr(Row + j, Col + 4);
+        for (i = 0; i < Width; i++) {
+            if (j == 0) {
+                out_byte = (data[i] << 4);
+            } else if (j == 1) {
+                out_byte = (data[i] >> 4) | (data[Width + i] << 4);
+            } else {
+                out_byte = (data[Width + i] >> 4);
+            }
+            LcdSend_Data(out_byte);
+        }
+    }
+}
+
+// ... existing code ...
+
 
 //======================================================================
 //ENDFILE

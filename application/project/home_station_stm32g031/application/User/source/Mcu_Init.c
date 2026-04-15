@@ -192,8 +192,8 @@ void Mcu_Init(void)
     EXTI_Config();
     TIM2_Init();
     
-//    Usart1_Init(9600);
-    Usart1_Init(19200);
+    Usart1_Init(9600);
+    // Usart1_Init(19200);
     IWDG_Config(200);
 	
     /*FLASH_Unlock(FLASH_MemType_Data);
