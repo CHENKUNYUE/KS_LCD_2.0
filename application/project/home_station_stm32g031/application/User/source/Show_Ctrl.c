@@ -246,22 +246,28 @@ void Page_Welcome_new(void) {
     /* 左侧SOC大数字 + 百分号 */
     if (Soc >= 100) {
         // 100% 的情况
-        Lcd_showChar_Shift4(1, 0, '1', 0);
-        Lcd_showChar_Shift4(1, 6, '0', 0);
-        Lcd_showChar_Shift4(1, 14, '0', 0);
+        // Lcd_showChar_Shift4(1, 0, '1', 0);
+        // Lcd_showChar_Shift4(1, 6, '0', 0);
+        // Lcd_showChar_Shift4(1, 14, '0', 0);
+        Lcd_showChar(3, 0, '1', 0);
+        Lcd_showChar(3, 6, '0', 0);
+        Lcd_showChar(3, 14, '0', 0);
         // Lcd_showChar(3, 26, '%', 0);
     } else {
         // 低于 100% 的情况：显示两位数
         if (((Soc / 10) % 10) == 0) {
-            Lcd_showChar_Shift4(1, 2, ' ', 0);
+            // Lcd_showChar_Shift4(1, 2, ' ', 0);
+            Lcd_showChar(3, 2, ' ', 0);
         } else {
-            Lcd_showChar_Shift4(1, 2, (uint8_t) ((Soc / 10) % 10) + '0', 0);
+            // Lcd_showChar_Shift4(1, 2, (uint8_t) ((Soc / 10) % 10) + '0', 0);
+            Lcd_showChar(3, 2, (uint8_t) ((Soc / 10) % 10) + '0', 0);
         }
-        Lcd_showChar_Shift4(1, 12, (uint8_t) (Soc % 10) + '0', 0);
+        // Lcd_showChar_Shift4(1, 12, (uint8_t) (Soc % 10) + '0', 0);
+        Lcd_showChar(3, 12, (uint8_t) (Soc % 10) + '0', 0);
 
     }
-    Lcd_showChar_Shift4(1, 23, '%', 0);
-    // 1. 选择电池图标
+    Lcd_showChar(3, 23, '%', 0);
+    //  选择电池图标
     if (Soc >= 100) {
         battery_icon = Battery_Icon_SOC_100_30x16;
     } else if (Soc >= 75) {
@@ -274,8 +280,8 @@ void Page_Welcome_new(void) {
         battery_icon = Battery_Icon_SOC_0_30x16;
     }
 
-    // 2. 显示位移 4 像素后的电池图标 (起始 Row 1 + 4px = Centered in Box)
-    Display_Custom_Bitmap_8x16_Shift4(1, 30, 30, battery_icon);
+    // 显示位移 4 像素后的电池图标 (起始 Row 1 + 4px = Centered in Box)
+    Display_Custom_Bitmap_8x16(3, 30, 30, battery_icon);
     
     /* 右上总压框（闪电图标 + 预留电压显示区） */
     Display_Custom_Bitmap_8x24(1, 60, 64, Right_Frame_Lightning_64x24);
@@ -290,7 +296,7 @@ void Page_Welcome_new(void) {
     Lcd_showChar6_8(5, 116, 'A', 0); // 单位靠右
 
     /* ====== 底部反白状态栏 (12像素高度) ====== */
-    // 1. 铺满底部黑条背景 (Page 6 底部 4 像素 + Page 7 全满 8 像素)
+    //  铺满底部黑条背景 (Page 6 底部 4 像素 + Page 7 全满 8 像素)
     // Lcd12864_Addr(6, 4); // 定位到 Page 6
     // for(i = 0; i < 128; i++) {
     //     LcdSend_Data(0xC0); // 填充 Page 6 底部的 2 像素
@@ -304,12 +310,32 @@ void Page_Welcome_new(void) {
     // }
     // Lcd_showStringEN(7, 122, " ", 1);
 
-    // 2. 最左边缩进4像素并打印 "TEMP "
+
+    // Lcd_showStringEN(5, 0, "WARING:", 0);  // 固定显示 WARN
+    {
+        const char *warn_code = " ";  // 默认空白（2个字符清除）
+        if      (PackData.Prp_State.BitName.bShortFault) warn_code = "SC";
+        else if (PackData.Prp_State.BitName.bNeg)        warn_code = "NEG";//反接保护
+        else if (PackData.Prp_State.BitName.bSmpErr)     warn_code = "SMP_ERR";//采样错误
+        else if (PackData.Prp_State.BitName.bChipSmpErr) warn_code = "CHIP_ERR";//芯片采样错误
+        else if (PackData.Prp_State.BitName.bCellVoltOV) warn_code = "OV";
+        else if (PackData.Prp_State.BitName.bCellVoltUL) warn_code = "UV";
+        else if (PackData.Prp_State.BitName.bTempOV)     warn_code = "OT";
+        else if (PackData.Prp_State.BitName.bTempUL)     warn_code = "UT";
+        else if (PackData.Prp_State.BitName.bCurrOV)     warn_code = "OC";
+        else if (PackData.Prp_State.BitName.bChgMosErr)  warn_code = "CMOS_ERR";
+        else if (PackData.Prp_State.BitName.bDisMosErr)  warn_code = "DMOS_ERR";
+        Lcd_showStringEN(6, 20, warn_code, 0);  // 列偏移30px，紧跟WARN后
+    }
+
+
+    // 最左边缩进4像素并打印 "TEMP "
     Lcd_showStringEN(7, 0, "TEMP:", 0);
 
     /* 显示电芯平均温度 BAT_TEMP */
     {
-        int16_t t_avg = PackData.BAT_TEMP;
+        int16_t t_avg = PackData.BAT_TEMP;//平均温度
+        // int16_t t_avg = 275;
         uint8_t temp_col = 28; //  "TEMP:"与温度的起始间距
 
         if (t_avg < 0) {
@@ -344,42 +370,10 @@ void Page_Welcome_new(void) {
         Lcd_showChar6_8(7, temp_col, 'C', 0);
     }
 
-    // 3. 往右调整并显示 "Status:" (或者将其缩短)，给左边的小数点留出显示空间
-    Lcd_showStringEN(7, 74, "Stat:", 0);
+    // 往右调整并显示 "Status:" (或者将其缩短)，给左边的小数点留出显示空间
+    // Lcd_showStringEN(7, 74, "Stat:", 0);
 
-    //告警状态：优先级 SC > OV > UV > OT > UT > OC > NG
-    // {
-    //     const char *warn_code = "   "; // 3个空格，清除残影
-    //     if      (PackData.Prp_State.BitName.bShortFault) { warn_code = "SC"; }
-    //     else if (PackData.Prp_State.BitName.bCellVoltOV) { warn_code = "OV"; }
-    //     else if (PackData.Prp_State.BitName.bCellVoltUL) { warn_code = "UV"; }
-    //     else if (PackData.Prp_State.BitName.bTempOV)     { warn_code = "OT"; }
-    //     else if (PackData.Prp_State.BitName.bTempUL)     { warn_code = "UT"; }
-    //     else if (PackData.Prp_State.BitName.bCurrOV)     { warn_code = "OC"; }
-    //     else if (PackData.Prp_State.BitName.bNeg)        { warn_code = "NG"; }
-    //
-    //     if (warn_code[0] != ' ') {
-    //         // 有保护状态：显示 "WARN XX"
-    //         Lcd_showStringEN(5, 0, "WARN ", 0);
-    //         Lcd_showStringEN(5, 30, warn_code, 0);
-    //     } else {
-    //         // 无保护状态：清空该行前段
-    //         Lcd_showStringEN(5, 0, "WARN ", 0);
-    //     }
-    // }
 
-    Lcd_showStringEN(5, 0, "WARN ", 0);  // 固定显示 WARN
-    {
-        const char *warn_code = "  ";  // 默认空白（2个字符清除）
-        if      (PackData.Prp_State.BitName.bShortFault) warn_code = "SC";
-        else if (PackData.Prp_State.BitName.bCellVoltOV) warn_code = "OV";
-        else if (PackData.Prp_State.BitName.bCellVoltUL) warn_code = "UV";
-        else if (PackData.Prp_State.BitName.bTempOV)     warn_code = "OT";
-        else if (PackData.Prp_State.BitName.bTempUL)     warn_code = "UT";
-        else if (PackData.Prp_State.BitName.bCurrOV)     warn_code = "OC";
-        else if (PackData.Prp_State.BitName.bNeg)        warn_code = "NG";
-        Lcd_showStringEN(5, 30, warn_code, 0);  // 列偏移30px，紧跟WARN后
-    }
 
 
 }
