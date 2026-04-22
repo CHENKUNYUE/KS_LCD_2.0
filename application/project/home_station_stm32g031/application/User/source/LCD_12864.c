@@ -544,6 +544,49 @@ void Display_Custom_Bitmap_8x16_Shift4(uint8_t Row, uint8_t Col, uint8_t Width, 
     }
 }
 
+/**
+ *
+ * @param Row
+ * @param Col
+ * @param str
+ * @param fb
+ * @param offset
+ */
+void Lcd_showString_ShiftUp(uint8_t Row, uint8_t Col, const char *str, uint8_t fb, uint8_t offset) {
+    uint8_t i, src_data;
+    uint16_t index;
+
+    while (*str != '\0') {
+        if (!(*str & 0x80)) {
+            index = (uint16_t)(*str - ' ');
+
+            // 1. 【核心优化】定位一次，连续写入当前页的 6 列数据
+            Lcd12864_Addr(Row, Col + 4);
+            for (i = 0; i < 6; i++) {
+                src_data = ShuZi6x8[index][i];
+                if (fb == 1) src_data = ~src_data;
+
+                LcdSend_Data(src_data >> offset); // 右移，向上偏
+            }
+
+            // 2. 【核心优化】定位一次，连续写入上一页的 6 列数据
+            if (Row > 0 && offset > 0) {
+                Lcd12864_Addr(Row - 1, Col + 4);
+                for (i = 0; i < 6; i++) {
+                    src_data = ShuZi6x8[index][i];
+                    if (fb == 1) src_data = ~src_data;
+
+                    LcdSend_Data(src_data << (8 - offset)); // 左移，补齐顶部
+                }
+            }
+
+            Col += 6; // 画完一个字符，列坐标往右挪6个像素
+        }
+        str++;
+        if (Col > 122) break;
+    }
+}
+
 // ... existing code ...
 
 

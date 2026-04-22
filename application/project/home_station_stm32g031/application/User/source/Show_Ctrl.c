@@ -313,19 +313,19 @@ void Page_Welcome_new(void) {
 
     // Lcd_showStringEN(5, 0, "WARING:", 0);  // 固定显示 WARN
     {
-        const char *warn_code = " ";  // 默认空白（2个字符清除）
+        const char *warn_code = " ";  // 默认空白
         if      (PackData.Prp_State.BitName.bShortFault) warn_code = "SC";
         else if (PackData.Prp_State.BitName.bNeg)        warn_code = "NEG";//反接保护
-        else if (PackData.Prp_State.BitName.bSmpErr)     warn_code = "SMP_ERR";//采样错误
-        else if (PackData.Prp_State.BitName.bChipSmpErr) warn_code = "CHIP_ERR";//芯片采样错误
+        else if (PackData.Prp_State.BitName.bSmpErr)     warn_code = "SMP!ERR";//采样错误(字库中"!"为"_")
+        else if (PackData.Prp_State.BitName.bChipSmpErr) warn_code = "CHIP!ERR";//芯片采样错误
         else if (PackData.Prp_State.BitName.bCellVoltOV) warn_code = "OV";
         else if (PackData.Prp_State.BitName.bCellVoltUL) warn_code = "UV";
         else if (PackData.Prp_State.BitName.bTempOV)     warn_code = "OT";
         else if (PackData.Prp_State.BitName.bTempUL)     warn_code = "UT";
         else if (PackData.Prp_State.BitName.bCurrOV)     warn_code = "OC";
-        else if (PackData.Prp_State.BitName.bChgMosErr)  warn_code = "CMOS_ERR";
-        else if (PackData.Prp_State.BitName.bDisMosErr)  warn_code = "DMOS_ERR";
-        Lcd_showStringEN(6, 20, warn_code, 0);  // 列偏移30px，紧跟WARN后
+        else if (PackData.Prp_State.BitName.bChgMosErr)  warn_code = "CMOS!ERR";
+        else if (PackData.Prp_State.BitName.bDisMosErr)  warn_code = "DMOS!ERR";
+        Lcd_showString_ShiftUp(6, 0, warn_code, 0,4);  // 列偏移30px，紧跟WARN后
     }
 
 

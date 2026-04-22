@@ -77,6 +77,7 @@ void Display_Custom_Bitmap_8x16(uint8_t Row, uint8_t Col, uint8_t WidthBytes, co
 void Display_Custom_Bitmap_8x24(uint8_t Row, uint8_t Col, uint8_t WidthBytes, const uint8_t *bitmap_data);
 void Lcd_showChar_Shift4(uint8_t Row, uint8_t Col, uint8_t uchar, uint8_t fb);
 void Display_Custom_Bitmap_8x16_Shift4(uint8_t Row, uint8_t Col, uint8_t Width, const uint8_t *data);
+void Lcd_showString_ShiftUp(uint8_t Row, uint8_t Col, const char *str, uint8_t fb, uint8_t offset);
 
 
 extern const uint8_t ASCIITAB[];
