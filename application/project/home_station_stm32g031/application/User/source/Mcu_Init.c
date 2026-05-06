@@ -12,6 +12,7 @@
 #include "stm32g0xx_hal.h"
 #include <gpio.h>
 #include "stm32g0xx_ll_iwdg.h"
+#include "build_parameters.h"
 
 //======================================================================
 //Function:	CLK_Init()
@@ -192,7 +193,7 @@ void Mcu_Init(void)
     EXTI_Config();
     TIM2_Init();
     
-    Usart1_Init(9600);
+    Usart1_Init(BAUD_RATE);
     // Usart1_Init(19200);
     IWDG_Config(200);
 	

@@ -57,6 +57,7 @@ include_directories(Core/Inc
         application/project/home_station_stm32g031/application/protocal_1363
         application/project/home_station_stm32g031/application/protocal_1363/include
         application/project/home_station_stm32g031/application/util
+        application/project/home_station_stm32g031/custom_config
         )
 
 add_definitions(-DUSE_HAL_DRIVER -DSTM32G031xx)
@@ -65,7 +66,7 @@ file(GLOB_RECURSE SOURCES
         "libraries/SEGGER_RTT/*.c"
         "startup/*.*"
         "Drivers/*.*"
-#        "Core/*.*"
+        #        "Core/*.*"
         "application/project/home_station_stm32g031/application/User/source/*.c"
         "application/project/home_station_stm32g031/application/User/User_Lib/source/*.c"
         "application/project/home_station_stm32g031/application/protocal_1363/source/*.c"
@@ -83,11 +84,26 @@ add_link_options(-T ${LINKER_SCRIPT})
 
 add_executable(${PROJECT_NAME}.elf ${SOURCES} ${LINKER_SCRIPT})
 
-set(HEX_FILE ${PROJECT_BINARY_DIR}/${PROJECT_NAME}.hex)
-set(BIN_FILE ${PROJECT_BINARY_DIR}/${PROJECT_NAME}.bin)
+# Extract LCD_SW_VERSION from build_parameters.h
+set(BUILD_PARAMS_FILE "${CMAKE_SOURCE_DIR}/application/project/home_station_stm32g031/custom_config/build_parameters.h")
+file(READ "${BUILD_PARAMS_FILE}" BUILD_PARAMS_CONTENT)
+string(REGEX MATCH "#define[ \t]+LCD_SW_VERSION[ \t]+\"([^\"]+)\"" _ "${BUILD_PARAMS_CONTENT}")
+if(CMAKE_MATCH_1)
+    set(LCD_VERSION ${CMAKE_MATCH_1})
+    message(STATUS "LCD Software Version: ${LCD_VERSION}")
+else()
+    set(LCD_VERSION "UNKNOWN")
+    message(WARNING "Could not extract LCD_SW_VERSION from build_parameters.h")
+endif()
+
+# Force reconfigure when build_parameters.h changes
+set_property(DIRECTORY APPEND PROPERTY CMAKE_CONFIGURE_DEPENDS ${BUILD_PARAMS_FILE})
+
+set(HEX_FILE ${PROJECT_BINARY_DIR}/${LCD_VERSION}.hex)
+set(BIN_FILE ${PROJECT_BINARY_DIR}/${LCD_VERSION}.bin)
 
 add_custom_command(TARGET ${PROJECT_NAME}.elf POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E remove ${PROJECT_BINARY_DIR}/*.hex ${PROJECT_BINARY_DIR}/*.bin
         COMMAND ${CMAKE_OBJCOPY} -Oihex $<TARGET_FILE:${PROJECT_NAME}.elf> ${HEX_FILE}
         COMMAND ${CMAKE_OBJCOPY} -Obinary $<TARGET_FILE:${PROJECT_NAME}.elf> ${BIN_FILE}
-        COMMENT "Building ${HEX_FILE}
-Building ${BIN_FILE}")
+        COMMENT "Building ${HEX_FILE}\nBuilding ${BIN_FILE}")
