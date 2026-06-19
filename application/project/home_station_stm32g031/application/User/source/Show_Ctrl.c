@@ -25,7 +25,7 @@
 #include "stdlib.h"
 #include "string.h"
 #include "build_parameters.h"
-
+#include "usart.h"
 #define PROTOCOL_ARR_LENGTH 35
 #define ROW_FIRST 0
 #define ROW_SECOND 2
@@ -548,7 +548,7 @@ void Page_Menu_1(void) {
     Lcd_showStringEN(ROW_SECOND, 2 * 8, "Battery Status  ", 0);
     Lcd_showChar6_8(ROW_SECOND, 15 * 8, '<', 0); // show "》"
 
-    Lcd_showStringEN(ROW_THREE, 2 * 8, "GYRO Status     ", 0);
+    Lcd_showStringEN(ROW_THREE, 2 * 8, "Baud Ste     ", 0);
     Lcd_showChar6_8(ROW_THREE, 15 * 8, '<', 0); // show "》"
 
     Lcd_showStringEN(ROW_LAST, 2 * 8, "Version Number  ", 0);
@@ -605,10 +605,22 @@ void Page_Status(void) {
  *
  *******************************************************************************/
 void Page_ParaSet(void) {
+    uint32_t cur_baud = get_current_baud();
+    if (cur_baud == 9600) {
+        SelectCH_Line_Index = 0;
+    } else {
+        SelectCH_Line_Index = 1;
+    }
     Show_SelectCh(SelectCH_Line_Index);
 
-    Lcd_showStringEN(ROW_FIRST, 2 * 8, "Set X axis:   ", 0);
-    Lcd_showStringEN(ROW_SECOND, 2 * 8, "Place Option: ", 0);
+    Lcd_showStringEN(ROW_FIRST, 2 * 8, "9600   ", 0);
+    Lcd_showStringEN(ROW_SECOND, 2 * 8, "19200 ", 0);
+
+    if (cur_baud == 9600) {
+        Lcd_showChar6_8(ROW_FIRST, 15 * 8 - 3, '^', 0);
+    } else {
+        Lcd_showChar6_8(ROW_SECOND, 15 * 8 - 3, '^', 0);
+    }
 }
 
 //======================================================================
@@ -851,124 +863,26 @@ void Page_LCD_Version(void) {
 }
 
 /*******************************************************************************
- * Function:	GyroSet()
+ * Function:	BaudSet()
  * Description: Gyro setting process 设置过程
  *******************************************************************************/
-void GyroSet(void) {
-    static uint8_t ParaSetFlag = 0;
-    static uint8_t PlaceFlag   = 0;
-    static uint8_t X_axisFlag  = 0;
-    // 菜单切换
-    if (0 == ParaSetFlag) {
-        if ((Key_Value & BIT2)) {
-            if (SelectCH_Line_Index == 0) {
-                SelectCH_Line_Index = 2;
-            }
-            SelectCH_Line_Index--;
-            Show_SelectCh(SelectCH_Line_Index);
-        } else if ((Key_Value & BIT3)) {
-            if (++SelectCH_Line_Index >= 2) {
-                SelectCH_Line_Index = 0;
-            }
-            Show_SelectCh(SelectCH_Line_Index);
-        }
+void BaudSet(void) {
+    if ((Key_Value & BIT3)) {
+        SelectCH_Line_Index = (SelectCH_Line_Index == 0) ? 1 : 0;
+        Show_SelectCh(SelectCH_Line_Index);
     }
-    /*陀螺仪设置说明*/
-    /*else if(1 == ParaSetFlag)       //陀螺仪上下按键设置方向
-        {
-            if((Key_Value & BIT2) || (Key_Value & BIT3))
-            {
-                if(0 == PlaceFlag)
-                {
-                    PlaceFlag = 1;
-                    Lcd_showStringEN(4, 6 * 8, "Horizontal", 1);
-                }
-                else if(1 == PlaceFlag)
-                {
-                    PlaceFlag = 0;
-                    Lcd_showStringEN(4, 6 * 8, "Vertical  ", 1);
-                }
-            }
-        }
-        else if(2 == ParaSetFlag)       //陀螺仪上下按键设置X,Y
-        {
-            if((Key_Value & BIT2) || (Key_Value & BIT3))
-            {
-                if(0 == X_axisFlag)
-                {
-                    X_axisFlag = 1;
-                    Lcd_showStringEN(0, 13*8, "180", 1);
-                }
-                else if(1 == X_axisFlag)
-                {
-                    X_axisFlag = 0;
-                    Lcd_showStringEN(0, 13*8, "  0", 1);
-                }
-            }
-        }*/
+
+    if ((Key_Value & BIT1)) {
+        uint32_t baud = (SelectCH_Line_Index == 0) ? 9600 : 19200;
+        set_baud_rate(baud);
+        New_Page_Status     = PAGE_MENU_1;
+        SelectCH_Line_Index = 2;
+    }
 
     if ((Key_Value & BIT4)) {
-        if (ParaSetFlag) {
-            ParaSetFlag = 0; // 返回页面初始值
-        } else {
-            New_Page_Status     = PAGE_MENU_1; // 回主菜单
-            SelectCH_Line_Index = 2;
-        }
+        New_Page_Status     = PAGE_MENU_1;
+        SelectCH_Line_Index = 2;
     }
-    /*陀螺仪设置说明*/
-    /*else if((Key_Value & BIT1))
-            {
-
-                ParaSetFlag = 0;
-
-
-                if(0 == SelectCH_Line_Index)
-                {
-                    if(0 == ParaSetFlag)
-                    {
-                        ParaSetFlag = 2;
-                      //  X_axisFlag = 2;
-                        X_axisFlag = X_axisFlag_COM;
-                    }
-                    else if(2 == ParaSetFlag)
-                    {
-                        SetCommondFlag = 1;   //Uart_SetParaCMD_1(X_axisFlag);
-     //发送X轴指令 ParaSetFlag = 0; X_axisFlag_COM = X_axisFlag;
-                    }
-                    if(1 == X_axisFlag)
-                    {
-                        Lcd_showStringEN(0, 13*8, "180", 0);
-                    }
-                    else if(0 == X_axisFlag)
-                    {
-                        Lcd_showStringEN(0, 13*8, "  0", 0);
-                    }
-                }
-
-                if(1 == SelectCH_Line_Index)
-                {
-                    if(0 == ParaSetFlag)
-                    {
-                        ParaSetFlag = 1;
-                     //   PlaceFlag = 2;
-                        PlaceFlag = PlaceFlag_COM;
-                    }
-                    else if(1 == ParaSetFlag)
-                    {
-                        SetCommondFlag = 2;   //Uart_SetParaCMD_2(PlaceFlag);
-     //陀螺仪垂直、水平指令 ParaSetFlag = 0; PlaceFlag_COM = PlaceFlag;
-                    }
-                    if(1 == PlaceFlag)
-                    {
-                        Lcd_showStringEN(4, 6 * 8, "Horizontal", 0);
-                    }
-                    else if(0 == PlaceFlag)
-                    {
-                        Lcd_showStringEN(4, 6 * 8, "Vertical  ", 0);
-                    }
-                }
-
-            }*/
 }
 #if PROTOCOL_EN_ALL == 1
 /*******************************************************************************
@@ -1252,22 +1166,22 @@ void press_ok_key(void) {
                 New_Page_Status = PAGE_STATUS;
             } else if (SelectCH_Line_Index == 2) {
                 New_Page_Status = PAGE_PARASET;
-                SetCommondFlag  = 3;
-                Uart_GetParaCMD_1(); // 读X轴指令
-                Delay_ms(10);
-                Uart_GetParaCMD_2(); // 读水平、垂直指令
-                Delay_ms(10);
-                if (1 == X_axisFlag_COM) {
-                    Lcd_showStringEN(0, 13 * 8, "180", 0);
-                } else if (0 == X_axisFlag_COM) {
-                    Lcd_showStringEN(0, 13 * 8, "  0", 0);
-                }
-
-                if (1 == PlaceFlag_COM) {
-                    Lcd_showStringEN(4, 6 * 8, "Horizontal", 0);
-                } else if (0 == PlaceFlag_COM) {
-                    Lcd_showStringEN(4, 6 * 8, "Vertical  ", 0);
-                }
+                // SetCommondFlag  = 3;
+                // Uart_GetParaCMD_1(); // 读X轴指令
+                // Delay_ms(10);
+                // Uart_GetParaCMD_2(); // 读水平、垂直指令
+                // Delay_ms(10);
+                // if (1 == X_axisFlag_COM) {
+                //     Lcd_showStringEN(0, 13 * 8, "180", 0);
+                // } else if (0 == X_axisFlag_COM) {
+                //     Lcd_showStringEN(0, 13 * 8, "  0", 0);
+                // }
+                //
+                // if (1 == PlaceFlag_COM) {
+                //     Lcd_showStringEN(4, 6 * 8, "Horizontal", 0);
+                // } else if (0 == PlaceFlag_COM) {
+                //     Lcd_showStringEN(4, 6 * 8, "Vertical  ", 0);
+                // }
             } else {
                 New_Page_Status = PAGE_SYSTEMSET;
             }
@@ -1304,7 +1218,7 @@ void press_ok_key(void) {
                 SelectCH_Line_Index = 0;
             }
             break;
-        case PAGE_PARASET: GyroSet(); break;
+        case PAGE_PARASET: BaudSet(); break;
         case PAGE_SYSTEMSET:
             if (SelectCH_Line_Index == 0) {
                 New_Page_Status = PAGE_BMS_VERSION;
@@ -1375,7 +1289,7 @@ void press_page_sub_key(void) {
             }
             Show_SelectCh(SelectCH_Line_Index);
             break;
-        case PAGE_PARASET: GyroSet(); break;
+        case PAGE_PARASET: BaudSet(); break;
         case PAGE_SYSTEMSET:
             if (SelectCH_Line_Index-- == 0) {
                 SelectCH_Line_Index = 3;
@@ -1543,7 +1457,7 @@ void press_page_add_key(void) {
             }
             Show_SelectCh(SelectCH_Line_Index);
             break;
-        case PAGE_PARASET: GyroSet(); break;
+        case PAGE_PARASET: BaudSet(); break;
         case PAGE_SYSTEMSET:
             if (++SelectCH_Line_Index >= 2) {
                 SelectCH_Line_Index = 0;
@@ -1706,7 +1620,7 @@ void press_esc_key(void) {
             New_Page_Status     = PAGE_MENU_1;
             SelectCH_Line_Index = 1;
             break;
-        case PAGE_PARASET: GyroSet(); break;
+        case PAGE_PARASET: BaudSet(); break;
         case PAGE_SYSTEMSET:
             New_Page_Status     = PAGE_MENU_1;
             SelectCH_Line_Index = 3;
@@ -1908,7 +1822,7 @@ void page_handler(void) {
                 SelectCH_Line_Index = 1;
             }
             break;
-        case PAGE_PARASET: GyroSet(); break; //陀螺仪设置参数
+        case PAGE_PARASET: BaudSet(); break; //陀螺仪设置参数
 
         // case PAGE_PARASET:
         //     if ((Key_Value & BIT4)) {

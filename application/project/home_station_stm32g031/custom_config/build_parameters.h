@@ -13,7 +13,7 @@
 /**************** BASIC PARA ***********************************************************************/
 
 #define     LCD_HW_VERSION                                  "LG-LCD-03-V1"//硬件版本
-#define     LCD_SW_VERSION                                  "LG-V3.0.1"//软件版本
+#define     LCD_SW_VERSION                                  "LG-V3.0.2"//软件版本
 
 #define     BAUD_RATE_19200                                 (19200)
 #define     BAUD_RATE_9600                                  (19200)

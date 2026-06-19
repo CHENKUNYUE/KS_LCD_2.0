@@ -80,9 +80,12 @@ void MX_DMA_Init(void) {
 }
 
 void MX_USART1_UART_Init(void) {
+    uint32_t saved_baud = *(uint32_t *)0x0800F800;
+    if (saved_baud != 9600 && saved_baud != 19200) saved_baud = 19200;
+
     huart1.Instance = USART1;
-    huart1.Init.BaudRate = BAUD_RATE;		//������
-    // huart1.Init.BaudRate               = 19200; //������
+    //  huart1.Init.BaudRate = 9600;		//������
+    huart1.Init.BaudRate               = saved_baud; //������
     huart1.Init.WordLength             = UART_WORDLENGTH_8B;
     huart1.Init.StopBits               = UART_STOPBITS_1; //ֹͣλ
     huart1.Init.Parity                 = UART_PARITY_NONE;
@@ -161,6 +164,29 @@ void HAL_UART_MspDeInit(UART_HandleTypeDef *uartHandle) {
 }
 
 /* USER CODE BEGIN 1 */
+#define BAUD_FLASH_ADDR  0x0800F800  // STM32G031最后一页
+
+uint32_t get_current_baud(void) {
+    return huart1.Init.BaudRate;
+}
+
+
+void set_baud_rate(uint32_t baud) {
+    FLASH_EraseInitTypeDef erase_init = {0};
+    uint32_t page_error = 0;
+
+    erase_init.TypeErase = FLASH_TYPEERASE_PAGES;
+    erase_init.Banks     = FLASH_BANK_1;
+    erase_init.Page      = 31;
+    erase_init.NbPages   = 1;
+
+    HAL_FLASH_Unlock();
+    HAL_FLASHEx_Erase(&erase_init, &page_error);
+    HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, BAUD_FLASH_ADDR, (uint64_t)baud);
+    HAL_FLASH_Lock();
+    NVIC_SystemReset();
+}
+
 void usart1_send_buf(uint8_t *ptr, uint16_t length, uint8_t is_rs485) {
     /*APP_PRINT("TX  %02d      ", length);
     for (int i = 0; i < length; ++i) {

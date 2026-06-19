@@ -40,6 +40,9 @@ extern UART_HandleTypeDef huart1;
 
 void MX_USART1_UART_Init(void);
 
+uint32_t get_current_baud(void);
+void set_baud_rate(uint32_t baud);
+
 /* USER CODE BEGIN Prototypes */
 void uart1_set_receive_it(void);
 void usart1_send_buf(uint8_t *ptr ,uint16_t length,uint8_t is_rs485);
