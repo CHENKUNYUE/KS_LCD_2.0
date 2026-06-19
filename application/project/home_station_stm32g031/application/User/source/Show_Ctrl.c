@@ -37,6 +37,9 @@ uint8_t New_Page_Status     = 0; // 需要切换的新页面
 uint8_t Old_Page_Status     = 0; // 当前页面
 uint8_t SelectCH_Line_Index = 0; // 选择字符所在位置
 
+static uint8_t is_old_ui_enabled = 0; // 0: 新界面, 1: 旧界面
+static uint8_t show_old_capacity = 0; // 0: 隐藏容量, 1: 显示容量
+
 static PAGE_PROTOCOL_T page_protocol_t = {0};
 
 PAGE_PROTOCOL_T *get_page_protocol_t(void) { return &page_protocol_t; };
@@ -164,8 +167,11 @@ void Show_SelectCh(uint8_t Line_Num) {
 // Description:
 //======================================================================
 void Page_Welcome_1(void) {
-    // Page_Welcome();
-    Page_Welcome_new();
+    if (is_old_ui_enabled) {
+        Page_Welcome_old();
+    } else {
+        Page_Welcome_new();
+    }
     New_Page_Status = PAGE_WELCOME;
 }
 //======================================================================
@@ -175,8 +181,7 @@ void Page_Welcome_1(void) {
 void Show_TemperatureNull(uint8_t Row) { Lcd_showStringEN(Row, 9 * 8, "  -- ", 0); }
 
 //旧界面
-#if 0
-void Page_Welcome_new(void) {
+void Page_Welcome_old(void) {
     Lcd_showStringENG(2, 1 * 3, "(", 0); // 电池—+左
     Lcd_showStringENG(2, 2 * 4, ")", 0); // 电池—+
 
@@ -264,8 +269,7 @@ void Page_Welcome_new(void) {
         Lcd_showChar(0, 13 * 8, (uint8_t) ((Soc / 10) % 10) + '0', 0);
     Lcd_showChar(0, 14 * 8, (uint8_t) (Soc % 10) + '0', 0);
 
-    // Lcd_showChar(6, 3 * 8, 'A', 0); // show "A"
-    // Lcd_showChar(6, 4 * 8, 'H', 0); // show "H"
+
 //容量
 #if 0
     if (PackData.Rm >= 10000) {     // 剩余容量
@@ -281,17 +285,21 @@ void Page_Welcome_new(void) {
     Lcd_showChar(6, 2 * 8, (uint8_t)((PackData.Rm / 100) % 10) + '0', 0);
 
 #endif
-    // if (PackData.Fcc >= 10000) { // 满充容量
-    //     Lcd_showChar(6, 0 * 8, (uint8_t) (PackData.Fcc / 10000) + '0', 0);
-    //     Lcd_showChar(6, 1 * 8, (uint8_t) ((PackData.Fcc / 1000) % 10) + '0', 0);
-    // } else if (PackData.Fcc >= 1000) {
-    //     Lcd_showChar(6, 0 * 8, ' ', 0);
-    //     Lcd_showChar(6, 1 * 8, (uint8_t) (PackData.Fcc / 1000) + '0', 0);
-    // } else {
-    //     Lcd_showChar(6, 0 * 8, ' ', 0);
-    //     Lcd_showChar(6, 1 * 8, ' ', 0);
-    // }
-    // Lcd_showChar(6, 2 * 8, (uint8_t) ((PackData.Fcc / 100) % 10) + '0', 0);
+    if (show_old_capacity) {
+        if (PackData.Fcc >= 10000) { // 满充容量
+            Lcd_showChar(6, 0 * 8, (uint8_t) (PackData.Fcc / 10000) + '0', 0);
+            Lcd_showChar(6, 1 * 8, (uint8_t) ((PackData.Fcc / 1000) % 10) + '0', 0);
+        } else if (PackData.Fcc >= 1000) {
+            Lcd_showChar(6, 0 * 8, ' ', 0);
+            Lcd_showChar(6, 1 * 8, (uint8_t) (PackData.Fcc / 1000) + '0', 0);
+        } else {
+            Lcd_showChar(6, 0 * 8, ' ', 0);
+            Lcd_showChar(6, 1 * 8, ' ', 0);
+        }
+        Lcd_showChar(6, 2 * 8, (uint8_t) ((PackData.Fcc / 100) % 10) + '0', 0);
+        Lcd_showChar(6, 3 * 8, 'A', 0); // show "A"
+        Lcd_showChar(6, 4 * 8, 'H', 0); // show "H"
+    }
     // 保护状态
     if (PackData.Prp_State.BitName.bCellVoltOV) {
         Lcd_showChar(6, 13 * 8, 'O', 0);
@@ -316,14 +324,12 @@ void Page_Welcome_new(void) {
         Lcd_showChar(6, 14 * 8, '-', 0);
     }
 }
-#endif
 
 void Page_Welcome_new(void) {
     uint8_t i, j;
     // extern const uint8_t Battery_Icon_SOC_0_30x16[60];
     const uint8_t *battery_icon = Battery_Icon_SOC_0_30x16;
 
-    Soc = 100;
 
     /* 清空整个屏幕 */
     for (j = 0; j < 8; j++) {
@@ -1158,6 +1164,12 @@ void press_menu_key(void) {
 void press_ok_key(void) {
     switch (Old_Page_Status) {
         case PAGE_WELCOME: //新增按键操作，数据更新
+            if (Key_Value & KEY_LONG_PRESS_FLAG) {
+                is_old_ui_enabled = !is_old_ui_enabled;
+                show_old_capacity = 0;
+                Old_Page_Status = 0xFF; // force redraw
+                New_Page_Status = PAGE_WELCOME;
+            }
             break;
         case PAGE_MENU_1:
             if (SelectCH_Line_Index == 0) {
@@ -1607,7 +1619,14 @@ void press_page_add_key(void) {
 
 void press_esc_key(void) {
     switch (Old_Page_Status) {
-        case PAGE_WELCOME: break; //新增按键操作，数据更新
+        case PAGE_WELCOME:
+            // 新增：长按ESC键5秒，且当前为旧界面时，切换容量显示状态
+            if ((Key_Value & KEY_LONG_PRESS_FLAG) && is_old_ui_enabled) {
+                show_old_capacity = !show_old_capacity;
+                Old_Page_Status = 0xFF; // 赋无效值，强制 Page_Change_Ctrl 重新清屏和渲染
+                New_Page_Status = PAGE_WELCOME;
+            }
+            break; //新增按键操作，数据更新
         case PAGE_MENU_1:
         case PAGE_MENU_2:
             // 按ESC回到首页面
@@ -2747,8 +2766,10 @@ void Page_Change_Ctrl(void) {
     //    Clear_Screen(0xFF,0xFF);		//界面切换时有阴影问题
 
     switch (New_Page_Status) {
-        // case PAGE_WELCOME: Page_Welcome(); break;     //新增按键操作，数据更新
-        case PAGE_WELCOME: Page_Welcome_new(); break; // 新增按键操作，数据更新
+        case PAGE_WELCOME: 
+            if (is_old_ui_enabled) Page_Welcome_old();
+            else Page_Welcome_new();
+            break;
         case PAGE_MENU_1: Page_Menu_1(); break;
         case PAGE_MENU_2: Page_Menu_2(); break;
         case PAGE_ANALOG_1: Page_Analog_1(); break;

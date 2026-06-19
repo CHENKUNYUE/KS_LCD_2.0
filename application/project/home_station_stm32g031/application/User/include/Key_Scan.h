@@ -12,6 +12,8 @@
 #define __KEY_SCAN_H
 #include "stm32g0xx_hal.h"
 
+#define KEY_LONG_PRESS_FLAG 0x80 // 长按标志位
+
 
 /*外部变量声明*/
 extern uint8_t Key_Value;

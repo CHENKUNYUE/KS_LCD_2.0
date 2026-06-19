@@ -89,6 +89,7 @@ PAGE_PROTOCOL_T *get_page_protocol_t (void);
 
     /*函数声明*/
 void Page_Welcome(void);
+void Page_Welcome_old(void);
 void Page_Welcome_new(void);
 void Page_Menu(void);
 void Page_Welcome_1(void);
