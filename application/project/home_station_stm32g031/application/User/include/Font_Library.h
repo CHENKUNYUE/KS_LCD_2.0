@@ -37,6 +37,8 @@ extern const uint8_t ShuZi6x16[];
 
 /* 新增图标字模声明 */
 extern const uint8_t Lightning_Icon[8];   // 闪电图标 8x8
+extern const uint8_t Lightning_Bolt_8x24_OnWhite[24]; // 旧界面电池内闪电 8x24
+extern const uint8_t Lightning_Circle_16x24_OnWhite[48]; // 旧界面电池内圆圈+闪电 16x24
 extern const uint8_t Battery_Empty[16];   // 空电池图标 8x16
 extern const uint8_t Battery_Full[16];    // 满电池图标 8x16
 extern const uint8_t Right_Frame_Lightning_64x16[128]; // 右侧边框+闪电图标 64x16，右侧预留总压显示区

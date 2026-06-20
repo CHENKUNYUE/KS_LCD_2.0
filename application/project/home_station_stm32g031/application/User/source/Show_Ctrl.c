@@ -203,6 +203,9 @@ void Page_Welcome_old(void) {
     Lcd_showChar(4, 4 * 8, '<', 0); // 空白8*16
     //    Lcd_showChar(4, 5 * 8, '}', 0);//空白8*16
 
+    Display_Custom_Bitmap_8x24(3, 12, 16, Lightning_Circle_16x24_OnWhite);
+    // Display_Custom_Bitmap_8x24(3, 16, 8, Lightning_Bolt_8x24_OnWhite);//闪电符号
+
     // 逆变器上
     //     Lcd_showChar(3, 10 * 8, '}', 0);//空白8*16
     //     Lcd_showChar(3, 11 * 8, ';', 1);//空白8*16
