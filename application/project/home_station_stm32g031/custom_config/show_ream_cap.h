@@ -13,7 +13,7 @@
 /**************** BASIC PARA ***********************************************************************/
 
 #define     LCD_HW_VERSION                                  "LG-LCD-03-V1"//硬件版本
-#define     LCD_SW_VERSION                                  "LG-V3.0.4"//软件版本
+#define     LCD_SW_VERSION                                  "LG-V3.0.3"//软件版本
 
 #define     BAUD_RATE_19200                                 (19200)
 #define     BAUD_RATE_9600                                  (9600)
@@ -22,7 +22,7 @@
 #define     BAUD_RATE                                       (BAUD_RATE_9600)
 
 #define DEFAULT_IS_OLD_UI_ENABLED                           (1) // 0: 新界面, 1: 旧界面
-#define DEFAULT_SHOW_OLD_CAPACITY                           (0) // 0: 上电不显示剩余容量, 1: 上电显示剩余容量 Rm+AH
+#define DEFAULT_SHOW_OLD_CAPACITY                           (1) // 0: 上电不显示剩余容量, 1: 上电显示剩余容量 Rm+AH
 
 
 #endif

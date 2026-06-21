@@ -37,8 +37,8 @@ uint8_t New_Page_Status     = 0; // 需要切换的新页面
 uint8_t Old_Page_Status     = 0; // 当前页面
 uint8_t SelectCH_Line_Index = 0; // 选择字符所在位置
 
-static uint8_t is_old_ui_enabled = 0; // 0: 新界面, 1: 旧界面
-static uint8_t show_old_capacity = 0; // 0: 隐藏容量, 1: 显示容量
+static uint8_t is_old_ui_enabled = DEFAULT_IS_OLD_UI_ENABLED; // 0: 新界面, 1: 旧界面
+static uint8_t show_old_capacity = 0; // 0: 剩余容量/隐藏, 1: 满充容量（ESC 长按切换）
 
 static PAGE_PROTOCOL_T page_protocol_t = {0};
 
@@ -180,6 +180,20 @@ void Page_Welcome_1(void) {
 //======================================================================
 void Show_TemperatureNull(uint8_t Row) { Lcd_showStringEN(Row, 9 * 8, "  -- ", 0); }
 
+static void Show_Old_Capacity_Value(uint32_t cap) {
+    if (cap >= 10000) {
+        Lcd_showChar(6, 0 * 8, (uint8_t) (cap / 10000) + '0', 0);
+        Lcd_showChar(6, 1 * 8, (uint8_t) ((cap / 1000) % 10) + '0', 0);
+    } else if (cap >= 1000) {
+        Lcd_showChar(6, 0 * 8, ' ', 0);
+        Lcd_showChar(6, 1 * 8, (uint8_t) (cap / 1000) + '0', 0);
+    } else {
+        Lcd_showChar(6, 0 * 8, ' ', 0);
+        Lcd_showChar(6, 1 * 8, ' ', 0);
+    }
+    Lcd_showChar(6, 2 * 8, (uint8_t) ((cap / 100) % 10) + '0', 0);
+}
+
 //旧界面
 void Page_Welcome_old(void) {
     Lcd_showStringENG(2, 1 * 3, "(", 0); // 电池—+左
@@ -273,35 +287,15 @@ void Page_Welcome_old(void) {
     Lcd_showChar(0, 14 * 8, (uint8_t) (Soc % 10) + '0', 0);
 
 
-//容量
-#if 0
-    if (PackData.Rm >= 10000) {     // 剩余容量
-    Lcd_showChar(6, 0 * 8, (uint8_t)(PackData.Rm / 10000) + '0', 0);
-    Lcd_showChar(6, 1 * 8, (uint8_t)((PackData.Rm / 1000) % 10) + '0', 0);
-    } else if (PackData.Rm >= 1000) {
-    Lcd_showChar(6, 0 * 8, ' ', 0);
-    Lcd_showChar(6, 1 * 8, (uint8_t)(PackData.Rm / 1000) + '0', 0);
-    } else {
-    Lcd_showChar(6, 0 * 8, ' ', 0);
-    Lcd_showChar(6, 1 * 8, ' ', 0);
-    }
-    Lcd_showChar(6, 2 * 8, (uint8_t)((PackData.Rm / 100) % 10) + '0', 0);
-
-#endif
+    /* 旧界面容量：show_old_capacity=1 满充容量；=0 时由 DEFAULT_SHOW_OLD_CAPACITY 决定上电是否显示剩余容量 */
     if (show_old_capacity) {
-        if (PackData.Fcc >= 10000) { // 满充容量
-            Lcd_showChar(6, 0 * 8, (uint8_t) (PackData.Fcc / 10000) + '0', 0);
-            Lcd_showChar(6, 1 * 8, (uint8_t) ((PackData.Fcc / 1000) % 10) + '0', 0);
-        } else if (PackData.Fcc >= 1000) {
-            Lcd_showChar(6, 0 * 8, ' ', 0);
-            Lcd_showChar(6, 1 * 8, (uint8_t) (PackData.Fcc / 1000) + '0', 0);
-        } else {
-            Lcd_showChar(6, 0 * 8, ' ', 0);
-            Lcd_showChar(6, 1 * 8, ' ', 0);
-        }
-        Lcd_showChar(6, 2 * 8, (uint8_t) ((PackData.Fcc / 100) % 10) + '0', 0);
-        Lcd_showChar(6, 3 * 8, 'A', 0); // show "A"
-        Lcd_showChar(6, 4 * 8, 'H', 0); // show "H"
+        Show_Old_Capacity_Value(PackData.Fcc);
+        Lcd_showChar(6, 3 * 8, 'A', 0);
+        Lcd_showChar(6, 4 * 8, 'H', 0);
+    } else if (DEFAULT_SHOW_OLD_CAPACITY) {
+        Show_Old_Capacity_Value(PackData.Rm);
+        Lcd_showChar(6, 3 * 8, 'A', 0);
+        Lcd_showChar(6, 4 * 8, 'H', 0);
     }
     // 保护状态
     if (PackData.Prp_State.BitName.bCellVoltOV) {
