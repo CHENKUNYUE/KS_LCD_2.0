@@ -4,7 +4,7 @@
 *                         www.segger.com                             *
 **********************************************************************
 
-File          : /Users/KS_project/G031_LCD/KS_LCD_2.0_3E/platform/Clion/STM32g031/stm32g031.jdebug
+File          : /Users/Dachenzz/Engineering/G031_2.0/KS_LCD_2.0/platform/Clion/STM32g031/stm32g031.jdebug
 Created       : 1 Jun 2021 16:35
 Ozone Version : V3.22e
 */
@@ -26,13 +26,13 @@ void OnProjectLoad (void) {
   Project.SetHostIF ("USB", "601012352");
   Project.SetTargetIF ("SWD");
   Project.SetTIFSpeed ("4 MHz");
-  Project.AddPathSubstitute ("/Users/KS_project/G031_LCD/KS_LCD_2.0_3E/platform/Clion/STM32g031/stm32g031.jdebug", "$(ProjectDir)");
-  Project.AddPathSubstitute ("/Users/KS_project/G031_LCD/KS_LCD_2.0_3E/platform/Clion/STM32g031/stm32g031.jdebug", "$(ProjectDir)");
+  Project.AddPathSubstitute ("/Users/Dachenzz/Engineering/G031_2.0/KS_LCD_2.0/platform/Clion/STM32g031/stm32g031.jdebug", "$(ProjectDir)");
+  Project.AddPathSubstitute ("/Users/Dachenzz/Engineering/G031_2.0/KS_LCD_2.0/platform/Clion/STM32g031/stm32g031.jdebug", "$(ProjectDir)");
   Project.AddSvdFile ("$(InstallDir)/Config/CPU/Cortex-M0.svd");
   //
   // User settings
   //
-  File.Open ("/Users/KS_project/G031_LCD/KS_LCD_2.0_3E/cmake-build-debug/stm32_g031g8.elf");
+  File.Open ("/Users/Dachenzz/Engineering/G031_2.0/KS_LCD_2.0/cmake-build-debug/stm32_g031g8.elf");
 }
 
 /*********************************************************************

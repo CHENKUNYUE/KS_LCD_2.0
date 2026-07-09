@@ -14,7 +14,7 @@
  *              2. ...
  */
 #ifndef COM_PROTOCAL_1363_COM_PROTOCAL1363_APP_H__
-#define     COM_PROTOCAL_1363_COM_PROTOCAL1363_APP_H__
+#define COM_PROTOCAL_1363_COM_PROTOCAL1363_APP_H__
 
 #include <stdint.h>
 

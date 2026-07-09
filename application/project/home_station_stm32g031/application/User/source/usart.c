@@ -81,7 +81,7 @@ void MX_DMA_Init(void) {
 
 void MX_USART1_UART_Init(void) {
     uint32_t saved_baud = *(uint32_t *)0x0800F800;
-    if (saved_baud != 9600 && saved_baud != 19200) saved_baud = 19200;
+    if (saved_baud != 9600 && saved_baud != 19200) saved_baud = BAUD_RATE;
 
     huart1.Instance = USART1;
     //  huart1.Init.BaudRate = 9600;		//������

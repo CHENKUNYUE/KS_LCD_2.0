@@ -98,6 +98,8 @@ int main(void) {
     Key_Flag    = 0;
     Comm_Flag_1 = 1;
 
+    get_protocol_time_flag = 1; // 复位后立即触发数据请求，不等定时器,解决唤醒屏数据上来慢问题
+
     while (1) {
         BMS_RT_INFO_T *p_bms                    = bms_get_rt_info();
         D_BMS_SET_OPTION_PARAM_T *bms_set_opt_t = bms_get_set_opt_info();

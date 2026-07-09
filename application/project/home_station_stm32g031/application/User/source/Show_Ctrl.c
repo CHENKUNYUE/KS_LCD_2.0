@@ -322,18 +322,65 @@ void Page_Welcome_old(void) {
     }
 }
 
+//soc充放电状态跑马
+static const uint8_t *get_battery_icon(uint8_t do_tick) {
+    static const uint8_t *battery_icons[] = {
+        Battery_Icon_SOC_0_30x16,
+        Battery_Icon_SOC_25_30x16,
+        Battery_Icon_SOC_50_30x16,
+        Battery_Icon_SOC_75_30x16,
+        Battery_Icon_SOC_100_30x16,
+    };
+    static uint8_t anim_step = 0;
+    static uint8_t anim_mode = 0;
+    static uint8_t anim_base = 0;
+
+    uint8_t soc_index;
+    if (Soc >= 75 && Soc <= 100) soc_index = 4;
+    else if (Soc <= 75 && Soc > 50) soc_index = 3;
+    else if (Soc <= 50 && Soc > 25) soc_index = 2;
+    else if (Soc <= 25) soc_index = 1;
+    else soc_index = 0;
+    if (!do_tick) return battery_icons[anim_step];
+
+    if (Dis_Charge_Flag == 1) {          // 充电：soc_index → 4 循环
+        if (anim_mode != 1) { anim_base = soc_index; anim_step = soc_index; anim_mode = 1; }
+        else {
+            if (soc_index != anim_base) { anim_base = soc_index; if (anim_step < soc_index) anim_step = soc_index; }
+            if (++anim_step > 4) {
+                if (anim_base >= 4) anim_step = 3;
+                else anim_step = anim_base;
+            }
+        }
+    } else if (Dis_Charge_Flag == 2) {   // 放电：soc_index → 0 循环
+        if (anim_mode != 2) { anim_base = soc_index; anim_step = soc_index; anim_mode = 2; }
+        else {
+            if (soc_index != anim_base) { anim_base = soc_index; if (anim_step > soc_index) anim_step = soc_index; }
+            if (anim_step == 0) {
+                if (anim_base == 0) anim_step = 1;
+                else anim_step = anim_base;
+            } else anim_step--;
+        }
+    } else {                             // 待机：实际SOC
+        anim_mode = 0;
+        anim_step = soc_index;
+    }
+
+    return battery_icons[anim_step];
+}
+
 void Page_Welcome_new(void) {
     uint8_t i, j;
     // extern const uint8_t Battery_Icon_SOC_0_30x16[60];
     const uint8_t *battery_icon = Battery_Icon_SOC_0_30x16;
 
 
-    /* 清空整个屏幕 */
-    for (j = 0; j < 8; j++) {
-        for (i = 0; i < 21; i++) {
-            Lcd_showCha6_7(j, i * 6, ' ', 1);
-        }
-    }
+    /* 清空整个屏幕 *///不需要,会导致刷新太快,闪屏
+//    for (j = 0; j < 8; j++) {
+//        for (i = 0; i < 21; i++) {
+//            Lcd_showCha6_7(j, i * 6, ' ', 1);
+//        }
+//    }
 
     /* 第 0 行：BMS Status 标题 (居中) */
     Lcd_showStringEN(0, 34, "BMS Status", 0);
@@ -362,20 +409,20 @@ void Page_Welcome_new(void) {
     }
     Lcd_showChar(3, 23, '%', 0);
     //  选择电池图标
-    if (Soc >= 100) {
-        battery_icon = Battery_Icon_SOC_100_30x16;
-    } else if (Soc >= 75) {
-        battery_icon = Battery_Icon_SOC_75_30x16;
-    } else if (Soc >= 50) {
-        battery_icon = Battery_Icon_SOC_50_30x16;
-    } else if (Soc >= 25) {
-        battery_icon = Battery_Icon_SOC_25_30x16;
-    } else {
-        battery_icon = Battery_Icon_SOC_0_30x16;
-    }
+//    if (Soc >= 100) {
+//        battery_icon = Battery_Icon_SOC_100_30x16;
+//    } else if (Soc >= 75) {
+//        battery_icon = Battery_Icon_SOC_75_30x16;
+//    } else if (Soc >= 50) {
+//        battery_icon = Battery_Icon_SOC_50_30x16;
+//    } else if (Soc >= 25) {
+//        battery_icon = Battery_Icon_SOC_25_30x16;
+//    } else {
+//        battery_icon = Battery_Icon_SOC_0_30x16;
+//    }
 
     // 显示位移 4 像素后的电池图标 (起始 Row 1 + 4px = Centered in Box)
-    Display_Custom_Bitmap_8x16(3, 30, 30, battery_icon);
+    Display_Custom_Bitmap_8x16(3, 30, 30,  get_battery_icon(0));
 
     /* 右上总压框（闪电图标 + 预留电压显示区） */
     Display_Custom_Bitmap_8x24(1, 60, 64, Right_Frame_Lightning_64x24);
@@ -2748,6 +2795,12 @@ void Page_Digital_Show(void) {
             //                }
             //            }
             break;
+        case PAGE_WELCOME: {
+            if (!is_old_ui_enabled) {
+                Display_Custom_Bitmap_8x16(3, 30, 30, get_battery_icon(1));
+            }
+            break;
+        }
     }
 }
 
