@@ -62,7 +62,7 @@ _Min_Stack_Size = 0x400; /* required amount of stack */
 MEMORY
 {
 RAM (xrw)      : ORIGIN = 0x20000000, LENGTH = 8K
-FLASH (rx)      : ORIGIN = 0x8000000, LENGTH = 64K
+FLASH (rx)     : ORIGIN = 0x8000000, LENGTH = 62K
 }
 
 /* Define output sections */
@@ -161,6 +161,15 @@ SECTIONS
     _ebss = .;         /* define a global symbol at bss end */
     __bss_end__ = _ebss;
   } >RAM
+
+    /* Noinit section — not zeroed on reset, retains value across NVIC_SystemReset */
+    .noinit (NOLOAD) :
+    {
+      . = ALIGN(4);
+      *(.noinit)
+      *(.noinit*)
+      . = ALIGN(4);
+    } >RAM
 
   /* User_heap_stack section, used to check that there is enough RAM left */
   ._user_heap_stack :

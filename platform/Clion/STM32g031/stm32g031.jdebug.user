@@ -3,7 +3,7 @@
 OpenDocument="Data_Init.c", FilePath="/Users/Dachenzz/Engineering/G031_2.0/KS_LCD_2.0/application/project/home_station_stm32g031/application/User/source/Data_Init.c", Line=107
 OpenDocument="Key_Scan.c", FilePath="/Users/Dachenzz/Engineering/G031_2.0/KS_LCD_2.0/application/project/home_station_stm32g031/application/User/source/Key_Scan.c", Line=23
 OpenDocument="startup_stm32g031xx.s", FilePath="/Users/Dachenzz/Engineering/G031_2.0/KS_LCD_2.0/startup/startup_stm32g031xx.s", Line=52
-OpenDocument="main.c", FilePath="/Users/Dachenzz/Engineering/G031_2.0/KS_LCD_2.0/application/project/home_station_stm32g031/application/User/source/main.c", Line=61
+OpenDocument="main.c", FilePath="/Users/Dachenzz/Engineering/G031_2.0/KS_LCD_2.0/application/project/home_station_stm32g031/application/User/source/main.c", Line=58
 OpenToolbar="Debug", Floating=0, x=0, y=0
 OpenWindow="Registers 1", DockArea=RIGHT, x=0, y=0, w=300, h=541, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0, FilteredItems=[], RefreshRate=1
 OpenWindow="Find Results", DockArea=BOTTOM, x=0, y=0, w=1512, h=323, FilterBarShown=0, TotalValueBarShown=0, ToolBarShown=0
@@ -11,4 +11,4 @@ SmartViewPlugin="", Page="", Toolbar="Hidden", Window="SmartView 1"
 TableHeader="Power Sampling", SortCol="Index", SortOrder="ASCENDING", VisibleCols=["Index";"Time";"Ch 0"], ColWidths=[100;100;100]
 TableHeader="Registers 1", SortCol="Name", SortOrder="ASCENDING", VisibleCols=["Name";"Value";"Description"], ColWidths=[100;118;294]
 TableHeader="RegisterSelectionDialog", SortCol="None", SortOrder="ASCENDING", VisibleCols=[], ColWidths=[]
-TableHeader="TargetExceptionDialog", SortCol="Name", SortOrder="ASCENDING", VisibleCols=["Name";"Value";"Address";"Description"], ColWidths=[200;100;100;343]
+TableHeader="TargetExceptionDialog", SortCol="Name", SortOrder="ASCENDING", VisibleCols=["Name";"Value";"Address";"Description"], ColWidths=[200;100;100;358]

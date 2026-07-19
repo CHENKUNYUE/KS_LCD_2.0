@@ -38,7 +38,79 @@ uint8_t Old_Page_Status     = 0; // 当前页面
 uint8_t SelectCH_Line_Index = 0; // 选择字符所在位置
 
 static uint8_t is_old_ui_enabled = DEFAULT_IS_OLD_UI_ENABLED; // 0: 新界面, 1: 旧界面
-static uint8_t show_old_capacity = 0; // 0: 剩余容量/隐藏, 1: 满充容量（ESC 长按切换）
+
+#define CONFIG_FLASH_ADDR  0x0800F800  // 最后一页（62K 偏移处）
+#define CONFIG_FLASH_PAGE  31
+#define CONFIG_MAGIC       0x4B533243  // "KS2C"
+
+typedef struct {
+    uint32_t magic;
+    uint32_t flags;  // bit0: capacity(1=满充), bit1: ui_mode(1=旧界面)
+} config_flash_t;
+
+#define CONFIG_FLAG_CAPACITY  (1 << 0)
+#define CONFIG_FLAG_UI_MODE   (1 << 1)
+
+static uint32_t config_get_flags(void) {
+    const config_flash_t *cfg = (const config_flash_t *)CONFIG_FLASH_ADDR;
+    if (cfg->magic == CONFIG_MAGIC) {
+        return cfg->flags;
+    }
+    return 0;
+}
+
+static void config_write_flags(uint32_t flags) {
+    config_flash_t cfg;
+    cfg.magic = CONFIG_MAGIC;
+    cfg.flags = flags;
+
+    HAL_FLASH_Unlock();
+
+    FLASH_EraseInitTypeDef erase_init = {0};
+    erase_init.TypeErase = FLASH_TYPEERASE_PAGES;
+    erase_init.Page      = CONFIG_FLASH_PAGE;
+    erase_init.NbPages   = 1;
+
+    uint32_t page_error = 0;
+    HAL_FLASHEx_Erase(&erase_init, &page_error);
+
+    HAL_FLASH_Program(FLASH_TYPEPROGRAM_DOUBLEWORD, CONFIG_FLASH_ADDR, *(uint64_t *)&cfg);
+
+    HAL_FLASH_Lock();
+}
+
+static uint8_t get_show_old_capacity(void) {
+    const config_flash_t *cfg = (const config_flash_t *)CONFIG_FLASH_ADDR;
+    if (cfg->magic == CONFIG_MAGIC) {
+        return (cfg->flags & CONFIG_FLAG_CAPACITY) ? 1 : 0;
+    }
+    return 0;
+}
+
+static void set_show_old_capacity(uint8_t val) {
+    uint32_t flags = config_get_flags();
+    if (val) flags |= CONFIG_FLAG_CAPACITY;
+    else     flags &= ~CONFIG_FLAG_CAPACITY;
+    config_write_flags(flags);
+}
+
+static uint8_t get_is_old_ui_enabled(void) {
+    const config_flash_t *cfg = (const config_flash_t *)CONFIG_FLASH_ADDR;
+    if (cfg->magic == CONFIG_MAGIC) {
+        return (cfg->flags & CONFIG_FLAG_UI_MODE) ? 1 : 0;
+    }
+    return DEFAULT_IS_OLD_UI_ENABLED;
+}
+
+static void set_is_old_ui_enabled(uint8_t val) {
+    uint32_t flags = config_get_flags();
+    if (val) flags |= CONFIG_FLAG_UI_MODE;
+    else     flags &= ~CONFIG_FLAG_UI_MODE;
+    config_write_flags(flags);
+}
+
+
+
 
 static PAGE_PROTOCOL_T page_protocol_t = {0};
 
@@ -167,7 +239,7 @@ void Show_SelectCh(uint8_t Line_Num) {
 // Description:
 //======================================================================
 void Page_Welcome_1(void) {
-    if (is_old_ui_enabled) {
+    if (get_is_old_ui_enabled()) {
         Page_Welcome_old();
     } else {
         Page_Welcome_new();
@@ -288,7 +360,7 @@ void Page_Welcome_old(void) {
 
 
     /* 旧界面容量：show_old_capacity=1 满充容量；=0 时由 DEFAULT_SHOW_OLD_CAPACITY 决定上电是否显示剩余容量 */
-    if (show_old_capacity) {
+    if (get_show_old_capacity()) {
         Show_Old_Capacity_Value(PackData.Fcc);
         Lcd_showChar(6, 3 * 8, 'A', 0);
         Lcd_showChar(6, 4 * 8, 'H', 0);
@@ -1209,8 +1281,8 @@ void press_ok_key(void) {
     switch (Old_Page_Status) {
         case PAGE_WELCOME: //新增按键操作，数据更新
             if (Key_Value & KEY_LONG_PRESS_FLAG) {
-                is_old_ui_enabled = !is_old_ui_enabled;
-                show_old_capacity = 0;
+                set_is_old_ui_enabled(!get_is_old_ui_enabled());
+                set_show_old_capacity(0);
                 Old_Page_Status = 0xFF; // force redraw
                 New_Page_Status = PAGE_WELCOME;
             }
@@ -1665,8 +1737,8 @@ void press_esc_key(void) {
     switch (Old_Page_Status) {
         case PAGE_WELCOME:
             // 新增：长按ESC键5秒，且当前为旧界面时，切换容量显示状态
-            if ((Key_Value & KEY_LONG_PRESS_FLAG) && is_old_ui_enabled) {
-                show_old_capacity = !show_old_capacity;
+            if ((Key_Value & KEY_LONG_PRESS_FLAG) && get_is_old_ui_enabled()) {
+                set_show_old_capacity(!get_show_old_capacity());
                 Old_Page_Status = 0xFF; // 赋无效值，强制 Page_Change_Ctrl 重新清屏和渲染
                 New_Page_Status = PAGE_WELCOME;
             }
@@ -2796,7 +2868,7 @@ void Page_Digital_Show(void) {
             //            }
             break;
         case PAGE_WELCOME: {
-            if (!is_old_ui_enabled) {
+            if (!get_is_old_ui_enabled()) {
                 Display_Custom_Bitmap_8x16(3, 30, 30, get_battery_icon(1));
             }
             break;
@@ -2817,7 +2889,7 @@ void Page_Change_Ctrl(void) {
 
     switch (New_Page_Status) {
         case PAGE_WELCOME: 
-            if (is_old_ui_enabled) Page_Welcome_old();
+            if (get_is_old_ui_enabled()) Page_Welcome_old();
             else Page_Welcome_new();
             break;
         case PAGE_MENU_1: Page_Menu_1(); break;
